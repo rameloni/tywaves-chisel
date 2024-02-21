@@ -13,7 +13,7 @@ ThisBuild / scalaVersion := "2.13.10"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "Tydi-Chisel-testing-framework-analysis: Chisel-examples",
+    name := "TyWaves-samples: Treadle extension",
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),

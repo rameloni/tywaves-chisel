@@ -17,3 +17,5 @@ test_run_dir/
 
 # Custom build directory
 build/
+
+*.anno.json
