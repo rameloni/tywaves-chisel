@@ -1,0 +1,19 @@
+# IDEs
+.vscode/
+.idea
+
+# Scala
+.metals/
+.scala-build/
+.bsp/
+.bloop/
+
+# Scala project
+target/
+project/
+
+# Chiseltest run directory
+test_run_dir/
+
+# Custom build directory
+build/
