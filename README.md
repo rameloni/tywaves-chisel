@@ -1,2 +1,7 @@
-# TyWaves-samples
-A repository that implements simple examples to test the feasibility of TyWaves solutions w.r.t. mapping from Chisel level code to final values dumped in trace files by the simulators.
+# Treadle extension
+
+## TODO for feasibility test
+- [x] Set up the project
+- [ ] Create a really simple Chisel example
+- [ ] Import what I already wrote during the experiments in December 2023
+
