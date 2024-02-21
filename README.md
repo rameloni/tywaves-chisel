@@ -23,6 +23,7 @@ This solution will extend another simulator, this time external from the Chisel 
 - Basic idea: similar to treadle, but now instead this aims to extend verilator for Chisel.
 - Verilator is a Verilog/SystemVerilog simulator that compiles the input RTL circuit to a C++ behavioral model. It is the fastest open source simulator available.
 - It can be used from chiseltest. This means that Chisel users can simulate their logic with both treadle and verilator.
+- Check the FST API.
 
 ### 3. Simulator-independent solution
 This solution aims to be independent from any simulator used. This means that it would leave the simulators unchanged and the whole mapping and value get is done externally.
