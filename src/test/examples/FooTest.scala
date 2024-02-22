@@ -11,16 +11,37 @@ class FooPeekPokeTester(c: Foo) extends PeekPokeTester(c) {
   val b = Seq(0, 0, 1, 1)
 
   // Reset
-  poke(c.a, 0)
+  poke(c.io.a, 0)
+  poke(c.io.b, 1)
   step(1)
 
   for (i <- a.zip(b)) {
-    poke(c.a, i._1)
-    poke(c.b, i._2)
+    poke(c.io.a, i._1)
+    poke(c.io.b, i._2)
     step(1)
   }
 
 }
+
+object RunFoo {
+  def apply(c: Foo): Unit = {
+    // Inputs and expected results
+    val a = Seq(0, 1, 0, 1)
+    val b = Seq(0, 0, 1, 1)
+
+    // Reset
+    c.io.a.poke(0)
+    c.io.b.poke(1)
+    c.clock.step()
+
+    for (i <- a.zip(b)) {
+      c.io.a.poke(i._1)
+      c.io.b.poke(i._2)
+      c.clock.step()
+    }
+  }
+}
+
 
 class FooTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "FooTest"
@@ -34,20 +55,7 @@ class FooTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "run normally" in {
     test(new Foo)
       .withAnnotations(Seq(WriteVcdAnnotation, TreadleBackendAnnotation)) {
-        c =>
-          // Inputs and expected results
-          val a = Seq(0, 1, 0, 1)
-          val b = Seq(0, 0, 1, 1)
-
-          // Reset
-          c.a.poke(0)
-          c.clock.step()
-
-          for (i <- a.zip(b)) {
-            c.a.poke(i._1)
-            c.b.poke(i._2)
-            c.clock.step()
-          }
+        c => RunFoo(c)
       }
   }
 

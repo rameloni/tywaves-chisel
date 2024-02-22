@@ -9,10 +9,14 @@ import chisel3._
 import circt.stage.ChiselStage
 
 class Foo extends Module {
-  val a, b = IO(Input(Bool()))
-  val out = IO(Output(UInt(8.W)))
 
-  out := a + b
+  val io = IO(new Bundle {
+    val a = Input(Bool())
+    val b = Input(Bool())
+    val out = Output(UInt(8.W))
+  })
+
+  io.out := io.a + io.b
 
 }
 
