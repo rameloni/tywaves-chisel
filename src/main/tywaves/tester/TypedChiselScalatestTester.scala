@@ -1,9 +1,11 @@
 package tywaves.tester
 
 import chisel3.Module
+import chiseltest.simulator.{Compiler, TypedTreadleSimulator}
 import chiseltest.{ChiselScalatestTester, TestResult}
 import firrtl2.AnnotationSeq
 import org.scalatest.TestSuite
+import tywaves.typedTreadle.ChiselMapper
 
 /**
  * Wraps the [[ChiselScalatestTester]] by overriding its methods in order to invoke another simulator backend rather
@@ -18,8 +20,8 @@ import org.scalatest.TestSuite
  */
 trait TypedChiselScalatestTester extends ChiselScalatestTester {
   this: TestSuite =>
-
   private val DEBUG = true
+
   private val DEBUG_VERBOSE = true
 
   /** A [[TestBuilder]] wrapper */
@@ -29,6 +31,8 @@ trait TypedChiselScalatestTester extends ChiselScalatestTester {
                                        override val chiselAnnotationSeq: firrtl.AnnotationSeq) extends
     TestBuilder(dutGen, annotationSeq, chiselAnnotationSeq) {
 
+//    val (dut, highFirrtl, lowFirrtl) = TypedTreadleSimulator.elaborate(dutGen, annotationSeq, chiselAnnotationSeq)
+    val mapper = new ChiselMapper(dutGen, annotationSeq, chiselAnnotationSeq)
     //    override def apply(testFn: T => Unit): TestResult = {
     //      //      println(console_color + "TypedTestBuilder.apply")
     //      val tester = defaults.createDefaultTester(dutGen, finalAnnos, chiselAnnotationSeq)
@@ -49,6 +53,9 @@ trait TypedChiselScalatestTester extends ChiselScalatestTester {
     // Step 3: The apply function is called by the testbench
     override def apply(testFn: T => Unit): TestResult = {
       println(consoleColor + "TypedTestBuilder.apply" + Console.RESET)
+
+      mapper.printCircuit()
+
       super.apply(testFn)
     }
 
