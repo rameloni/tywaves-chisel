@@ -1,30 +1,12 @@
 package examples
 
-import chiseltest._
-import chiseltest.iotesters.PeekPokeTester
+// The high level simulation API: it uses svsim internally
+import chisel3.simulator.EphemeralSimulator._
+
 import org.scalatest.flatspec.AnyFlatSpec
 
-class FooPeekPokeTester(c: Foo) extends PeekPokeTester(c) {
-
-  // Inputs and expected results
-  val a = Seq(0, 1, 0, 1)
-  val b = Seq(0, 0, 1, 1)
-
-  // Reset
-  poke(c.io.a, 0)
-  poke(c.io.b, 1)
-  step(1)
-
-  for (i <- a.zip(b)) {
-    poke(c.io.a, i._1)
-    poke(c.io.b, i._2)
-    step(1)
-  }
-
-}
-
 object RunFoo {
-  def apply(c: Foo): Unit = {
+  def apply(c: => Foo): Unit = {
     // Inputs and expected results
     val a = Seq(0, 1, 0, 1)
     val b = Seq(0, 0, 1, 1)
@@ -42,22 +24,21 @@ object RunFoo {
   }
 }
 
-
-class FooTest extends AnyFlatSpec with ChiselScalatestTester {
+class FooTest extends AnyFlatSpec {
   behavior of "FooTest"
 
   it should "run peek poke" in {
-    test(new Foo)
-      .withAnnotations(Seq(WriteVcdAnnotation, TreadleBackendAnnotation))
-      .runPeekPoke(new FooPeekPokeTester(_))
+    simulate(new Foo) {
+      RunFoo(_)
+    }
+
   }
 
   it should "run normally" in {
-    test(new Foo)
-      .withAnnotations(Seq(WriteVcdAnnotation, TreadleBackendAnnotation)) {
-        c => RunFoo(c)
-      }
+    simulate(new Foo) { c =>
+      c.io.a.poke(true)
+      c.io.b.poke(0)
+    }
   }
-
 
 }

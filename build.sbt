@@ -1,7 +1,5 @@
-val chiselVersion = "5.0.0"
-//val chiselTestVersion = "5.1-SNAPSHOT"
-val chiselTestVersion = "5.0.0"
-//val chiselTestVersion = "6.0-SNAPSHOT"
+val chiselVersion    = "5.0.0"
+val scalatestVersion = "3.2.16"
 
 Compile / scalaSource := baseDirectory.value / "src/main"
 
@@ -15,13 +13,12 @@ ThisBuild / scalaVersion := "2.13.10"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "TyWaves-samples: Treadle extension",
+    name := "TyWaves-samples: ChiselSim elaboration study",
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
-//    resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
     libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion,
-    libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % chiselTestVersion,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalatestVersion % "test",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
