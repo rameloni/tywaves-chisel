@@ -5,7 +5,7 @@ import chiseltest.simulator.{Compiler, TypedTreadleSimulator}
 import chiseltest.{ChiselScalatestTester, TestResult}
 import firrtl2.AnnotationSeq
 import org.scalatest.TestSuite
-import tywaves.typedTreadle.ChiselMapper
+import chisel3.tywaves.typedTreadle.ChiselMapper
 
 /**
  * Wraps the [[ChiselScalatestTester]] by overriding its methods in order to invoke another simulator backend rather

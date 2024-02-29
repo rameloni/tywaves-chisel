@@ -1,12 +1,12 @@
 package examples
 
-import chiseltest._
-import chiseltest.iotesters.PeekPokeTester
 import org.scalatest.flatspec.AnyFlatSpec
+import treadle2.{SymbolsToWatchAnnotation, VcdShowUnderScoredAnnotation}
 import tywaves.tester.TypedChiselScalatestTester
 import tywaves.typedTreadle.TypedTreadleBackendAnnotation
 
 class FooTestTreadleExt extends AnyFlatSpec with TypedChiselScalatestTester {
+  import chiseltest._
   behavior of "FooTest"
 
   it should "run peek poke" in {

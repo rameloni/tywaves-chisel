@@ -30,8 +30,8 @@ object RunFoo {
     val b = Seq(0, 0, 1, 1)
 
     // Reset
-    c.io.a.poke(0)
-    c.io.b.poke(1)
+    c.io.a.poke(false)
+    c.io.b.poke(true)
     c.clock.step()
 
     for (i <- a.zip(b)) {

@@ -1,3 +1,4 @@
+package chisel3
 package tywaves.typedTreadle
 
 //import chisel3.RawModule
@@ -5,8 +6,12 @@ package tywaves.typedTreadle
 import chisel3.experimental.hierarchy.core.{Definition, IsInstantiable}
 import chisel3._
 import chisel3.experimental.BaseModule
+import chisel3.internal.naming.NamingContext
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
+import tywaves.typedTreadle.UseConverter
+import firrtl2.transforms.DontTouchAnnotation
 
+//import chisel3.internal.firrtl.{ir => chisel3firrtl}
 private object Color {
   val RESET = Console.RESET
   val COMPONENT = Console.YELLOW
@@ -27,6 +32,7 @@ private object Color {
 
   def reset(): Unit = {
     colorStack = colorStack.tail
+    print(Console.RESET)
     print(colorStack.head)
   }
 
@@ -52,7 +58,11 @@ object ChiselMapperDebug {
 
     println(circuit.firrtlAnnotations.mkString("\n"))
     println(circuit.components.mkString("\n"))
+    print("renames: ")
+    circuit.renames.serialize
+
     circuit.components.foreach(c => printComponent(c))
+
   }
 
   def printComponent(c: chisel3.internal.firrtl.Component, nestedLevel: Int = 0): Unit = {
@@ -62,7 +72,7 @@ object ChiselMapperDebug {
     println(tabs(nestedLevel) + "name: " + c.name)
 
     // Print the ports
-    c.ports.foreach(p => printPort(p, nestedLevel + 1))
+    c.ports.foreach(p => printPort(p, nestedLevel + 1, c))
 
     c match {
       case defModule: chisel3.internal.firrtl.DefModule => printDefModule(defModule, nestedLevel + 1)
@@ -78,7 +88,7 @@ object ChiselMapperDebug {
     println(tabs(nestedLevel) + "name: " + d.name)
 
     // Print the ports
-    d.ports.foreach(p => printPort(p, nestedLevel + 1))
+    d.ports.foreach(p => printPort(p, nestedLevel + 1, component = d))
     d.commands.foreach(c => printCommand(c, nestedLevel + 1))
     //    d match {
     //      case defModule: chisel3.internal.firrtl.DefModule =>
@@ -94,19 +104,43 @@ object ChiselMapperDebug {
     println(tabs(i) + "info: " + command.sourceInfo)
 
     command match {
-      case defPrim: chisel3.internal.firrtl.DefPrim[Data] => println(tabs(i) + "DefPrim: " + defPrim.args)
+      case defPrim: chisel3.internal.firrtl.DefPrim[Data] => {
+        println(tabs(i) + "DefPrim: " + defPrim)
+        defPrim.args.foreach(a => printArg(a, i + 1))
+      }
+      case connect: chisel3.internal.firrtl.Connect => println(tabs(i) + "Connect: " + connect)
       case _ => println(tabs(i) + "Not found: " + command.getClass.getName)
     }
     //    println(tabs(i) + "info: " + command.)
     Color.reset()
   }
 
+  def printArg(arg: chisel3.internal.firrtl.Arg, i: Int): Unit = {
+    Color(Color.COMMAND)
+    println(tabs(i) + "Arg: " + arg.getClass.getName)
+
+    //    println(tabs(i) + "contextualName: " + arg.contextualName)
+    //    println(tabs(i) + "fullName:       " + arg.fullName)
+    println(tabs(i) + "localName:      " + arg.localName)
+    println(tabs(i) + "name:           " + arg.name)
+    Color.reset()
+  }
+
   /** Print a [[chisel3.internal.firrtl.Port]] */
-  def printPort(p: chisel3.internal.firrtl.Port, nestedLevel: Int = 0) = {
+  def printPort(p: chisel3.internal.firrtl.Port, nestedLevel: Int = 0, component: chisel3.internal.firrtl.Component) = {
     Color(Color.PORT)
+    Color(Color.CYAN)
+    val convertedPort = UseConverter.convert(p, p.dir)
+    println("ConvertedPort: " + convertedPort)
+    println("TopLevelType: " + p.id.getClass.getName)
+    println("OriginalPort:  " + p)
+
+    Color.reset()
+    println(tabs(nestedLevel) + "Name Port: " + Name(p.id).unpack(component))
+    println(tabs(nestedLevel) + "FullName Port: " + FullName(p.id).unpack(component))
     println(tabs(nestedLevel) + "Start Port: " + p.id.typeName)
     println(tabs(nestedLevel) + "id: " + p.id + "  ")
-    printData(p.id, nestedLevel + 1)
+    printData(p.id, nestedLevel + 1, component = component)
 
     println(tabs(nestedLevel) + "direction: " + p.dir)
     println(tabs(nestedLevel) + "info: " + p.sourceInfo)
@@ -116,9 +150,13 @@ object ChiselMapperDebug {
   }
 
   /** Print a [[Data]] */
-  def printData(data: chisel3.Data, nestedLevel: Int = 0): Unit = {
+  def printData(data: chisel3.Data, nestedLevel: Int = 0, component: chisel3.internal.firrtl.Component): Unit = {
     Color(Color.DATA)
-
+    printHasIdInformation(data, nestedLevel+1)
+    println(tabs(nestedLevel) + firrtl.transforms.DontTouchAnnotation(data.toAbsoluteTarget).serialize)
+    println(tabs(nestedLevel) + MyAnnotation.serialize(data))
+    println(tabs(nestedLevel) + "Name Data:        " + Name(data).unpack(component))
+    println(tabs(nestedLevel) + "FullName Data:    " + FullName(data).unpack(component))
     println(tabs(nestedLevel) + "Data:             " + data.getClass.getName)
     println(tabs(nestedLevel) + "width:            " + data.getWidth)
     println(tabs(nestedLevel) + "InstanceName:     " + data.instanceName)
@@ -134,28 +172,41 @@ object ChiselMapperDebug {
 
     // Check if Data is a composed type
     data match {
-      case b: chisel3.Bundle => printBundle(b, nestedLevel + 1)
-      case v: chisel3.Vec[Data] => printVec(v, nestedLevel + 1)
+      case b: chisel3.Bundle => printBundle(b, nestedLevel + 1, component = component)
+      case v: chisel3.Vec[Data] => printVec(v, nestedLevel + 1, component = component)
       case other => println(tabs(nestedLevel) + "Not found: " + other.getClass.getName)
     }
     Color.reset()
   }
 
+  def printHasIdInformation(data: chisel3.InstanceId, nestedLevel: Int = 0):Unit = {
+    Color(Console.UNDERLINED + Console.CYAN)
+    println(tabs(nestedLevel) + "InstanceId or HasId")
+    println(tabs(nestedLevel) + "InstanceName:   " +  data.instanceName)
+    println(tabs(nestedLevel) + "pathName:       " +  data.pathName)
+    println(tabs(nestedLevel) + "parentPathName: " +  data.parentPathName)
+    println(tabs(nestedLevel) + "parentModName:  " +  data.parentModName)
+    println(tabs(nestedLevel) + "toNamed:        " +  data.toNamed)
+    println(tabs(nestedLevel) + "toTarget:       " +  data.toTarget)
+    println(tabs(nestedLevel) + "toAbsoluteTarget: " +  data.toAbsoluteTarget)
+    Color.reset()
+  }
+
   /** Print a Bundle */
-  def printBundle(b: chisel3.Bundle, nestedLevel: Int = 0): Unit = {
+  def printBundle(b: chisel3.Bundle, nestedLevel: Int = 0, component: chisel3.internal.firrtl.Component): Unit = {
     Color(Color.BUNDLE)
     println(tabs(nestedLevel) + "Start Bundle: " + b.className)
     b.elements.foreach(e => {
-      printData(e._2, nestedLevel + 1)
+      printData(e._2, nestedLevel + 1, component = component)
       println()
     })
     println(tabs(nestedLevel) + "End Bundle: " + b.getClass.getName)
     Color.reset()
   }
 
-  def printVec(v: chisel3.Vec[Data], nestedLevel: Int = 0): Unit = {
+  def printVec(v: chisel3.Vec[Data], nestedLevel: Int = 0, component: chisel3.internal.firrtl.Component): Unit = {
     println(tabs(nestedLevel) + "Vec: " + v.getClass.getName)
-    v.foreach(e => printData(e, nestedLevel + 1))
+    v.foreach(e => printData(e, nestedLevel + 1, component = component))
   }
 
 

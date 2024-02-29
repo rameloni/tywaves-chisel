@@ -1,6 +1,8 @@
 val chiselVersion = "5.0.0"
 //val chiselTestVersion = "5.1-SNAPSHOT"
 val chiselTestVersion = "5.0.0"
+//val chiselTestVersion = "6.0-SNAPSHOT"
+
 Compile / scalaSource := baseDirectory.value / "src/main"
 
 Test / scalaSource := baseDirectory.value / "src/test"
@@ -17,6 +19,7 @@ lazy val root = (project in file("."))
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
+//    resolvers ++= Resolver.sonatypeOssRepos("snapshots"),
     libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion,
     libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % chiselTestVersion,
     scalacOptions ++= Seq(
