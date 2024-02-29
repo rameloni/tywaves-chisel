@@ -1,8 +1,8 @@
 package examples
 
 // The high level simulation API: it uses svsim internally
-import chisel3.simulator.EphemeralSimulator._
-
+import chisel3.simulator.BetterEphemeralSimulator._
+import chisel3.simulator.settings
 import org.scalatest.flatspec.AnyFlatSpec
 
 object RunFoo {
@@ -27,15 +27,14 @@ object RunFoo {
 class FooTest extends AnyFlatSpec {
   behavior of "FooTest"
 
-  it should "run peek poke" in {
-    simulate(new Foo) {
+  it should "trace with underscore" in {
+    simulate(new Foo, Seq(settings.EnableTraceWithUnderscore)) {
       RunFoo(_)
     }
-
   }
 
-  it should "run normally" in {
-    simulate(new Foo) { c =>
+  it should "trace" in {
+    simulate(new Foo, Seq(settings.EnableTrace)) { c =>
       c.io.a.poke(true)
       c.io.b.poke(0)
     }
