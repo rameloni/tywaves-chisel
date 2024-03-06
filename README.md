@@ -6,6 +6,162 @@
 - [x] Create a really simple Chisel example
 - [ ] Import what I already wrote during the experiments in December 2023
 
+# ChiselSim: call stack
+
+## Starting the simulation
+
+## Step 1: Create the simulator
+
+This is the simulator trait that provides function to run the simulation (its methods simulate and processBackends
+should not be changed).
+
+```scala
+trait SingleBackendSimulator[T <: Backend] extends Simulator {
+  val backend: T
+
+  def tag: String
+
+  def commonCompilationSettings: CommonCompilationSettings
+
+  def backendSpecificCompilationSettings: backend.CompilationSettings
+
+  final def processBackends(processor: Simulator.BackendProcessor): Unit = {
+    processor.process(backend)(tag, commonCompilationSettings, backendSpecificCompilationSettings)
+  }
+
+  def simulate[T <: RawModule, U](
+                                   module: => T
+                                 )(body: (Simulation.Controller, T) => U
+                                 ): Simulator.BackendInvocationDigest[U] = {
+    _simulate(module)(body).head
+  }
+}
+```
+
+## Step 2: Run the simulation (the module is not elaborated yet)
+
+When the `simulate` method is called, it calls the `_simulate` method which is defined as follows:
+
+```scala
+ private[simulator] def _simulate[T <: RawModule, U](
+                                                      module: => T
+                                                    )(body: (Simulation.Controller, T) => U
+                                                    ): Seq[Simulator.BackendInvocationDigest[U]] = {
+  // Imp: the workspace is created
+  val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
+  workspace.reset()
+  // Imp: the module is elaborated
+  val (dut, ports) = workspace.elaborateGeneratedModuleInternal({ () => module })
+  workspace.generateAdditionalSources()
+  val compiler = new Simulator.WorkspaceCompiler(
+    workspace,
+    customSimulationWorkingDirectory,
+    verbose,
+    { controller =>
+      require(Simulator.dynamicSimulationContext.value.isEmpty, "Nested simulations are not supported.")
+      val context = Simulator.SimulationContext(ports, controller)
+      Simulator.dynamicSimulationContext.withValue(Some(context)) {
+        val outcome = body(controller, dut)
+        context.completeSimulation()
+        outcome
+      }
+    }
+  )
+  processBackends(compiler)
+  compiler.results.toSeq
+}
+```
+
+### Step 3.1: Elaborate the module and execute the chisel stage
+
+`ChiselStage.execute`
+
+```scala
+private[simulator] def elaborateGeneratedModuleInternal[T <: RawModule](
+                                                                         generateModule: () => T
+                                                                       ): (T, Seq[(Data, ModuleInfo.Port)]) = {
+  // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
+  var someDut: Option[T] = None
+  // Imp: Executing the chisel stage
+  val outputAnnotations  = (new circt.stage.ChiselStage).execute(
+    Array("--target", "systemverilog", "--split-verilog"),
+    Seq(
+      chisel3.stage.ChiselGeneratorAnnotation { () =>
+        val dut = generateModule()
+        someDut = Some(dut)
+        dut
+      },
+      circt.stage.FirtoolOption("-disable-annotation-unknown"),
+      firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath)
+    )
+  )
+  // Other operations ...
+}
+```
+
+```scala
+// Imp: ChiselStage execute
+final def execute(args: Array[String], annotations: AnnotationSeq): AnnotationSeq =
+  transform(shell.parse(args, annotations))
+```
+
+Stage is executed with some input annotations.
+
+```scala
+final def transform(annotations: AnnotationSeq): AnnotationSeq = {
+  val annotationsx =
+    Seq(new phases.GetIncludes)
+      .foldLeft(annotations)((a, p) => p.transform(a))
+
+  Logger.makeScope(annotationsx) {
+    Seq(
+      new phases.AddDefaults,
+      new phases.Checks,
+      new Phase {
+        def transform(a: AnnotationSeq) = run(a)
+      }, // imp: here the chisel stage phases are executed
+      new phases.WriteOutputAnnotations
+    )
+      .foldLeft(annotationsx)((a, p) => p.transform(a))
+  }
+}
+```
+
+The annotations executed are:
+
+- `chisel3.stage.ChiselGeneratorAnnotation`
+- `circt.stage.FirtoolOption("-disable-annotation-unknown")`
+- `firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath)`
+
+### Step 3.2: ChiselStage run phases
+
+Thanks to these phases (and the one before (`AddDefaults`, `Checks`, `WriteOutputAnnotation`)) the circuit is elaborated
+and transformed into the final one
+
+```scala
+  override def run(annotations: AnnotationSeq): AnnotationSeq = {
+  val pm = new PhaseManager(
+    targets = Seq(
+      Dependency[chisel3.stage.phases.Checks],
+      Dependency[chisel3.stage.phases.AddImplicitOutputFile],
+      Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+      Dependency[chisel3.stage.phases.MaybeAspectPhase],
+      Dependency[chisel3.stage.phases.AddSerializationAnnotations],
+      Dependency[chisel3.stage.phases.Convert],
+      Dependency[chisel3.stage.phases.MaybeInjectingPhase],
+      Dependency[circt.stage.phases.AddImplicitOutputFile],
+      Dependency[circt.stage.phases.Checks],
+      Dependency[circt.stage.phases.CIRCT]
+    ),
+    currentState = Seq(
+      Dependency[firrtl.stage.phases.AddDefaults],
+      Dependency[firrtl.stage.phases.Checks]
+    )
+  )
+  pm.transform(annotations)
+}
+```
+
 # Mapping
 
 ## Getting the annotations
@@ -48,7 +204,7 @@ The circuit is characterized by:
 | newAnnotations | The new annotations of the circuit |
 
 ```scala
-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation],
+case class Circuit(name:    String, components: Seq[Component], annotations: Seq[ChiselAnnotation],
                    renames: RenameMap, newAnnotations: Seq[ChiselMultiAnnotation])
 ```
 
@@ -157,8 +313,8 @@ It is a base class for modules in the FIRRTL IR.
 
 ```scala
 abstract class DefModule extends FirrtlNode with IsDeclaration {
-  val info: Info
-  val name: String
+  val info : Info
+  val name : String
   val ports: Seq[Port]
 }
 

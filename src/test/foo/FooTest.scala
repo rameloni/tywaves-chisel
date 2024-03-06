@@ -1,8 +1,8 @@
-package examples
+package foo
 
 // The high level simulation API: it uses svsim internally
 import chisel3.simulator.BetterEphemeralSimulator._
-import chisel3.simulator.settings
+import chisel3.simulator.simSettings
 import org.scalatest.flatspec.AnyFlatSpec
 
 object RunFoo {
@@ -28,13 +28,13 @@ class FooTest extends AnyFlatSpec {
   behavior of "FooTest"
 
   it should "trace with underscore" in {
-    simulate(new Foo, Seq(settings.EnableTraceWithUnderscore)) {
+    simulate(new Foo, Seq(simSettings.EnableTraceWithUnderscore)) {
       RunFoo(_)
     }
   }
 
   it should "trace" in {
-    simulate(new Foo, Seq(settings.EnableTrace)) { c =>
+    simulate(new Foo, Seq(simSettings.EnableTrace)) { c =>
       c.io.a.poke(true)
       c.io.b.poke(0)
     }

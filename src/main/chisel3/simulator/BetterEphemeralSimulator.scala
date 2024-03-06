@@ -3,47 +3,48 @@ package chisel3.simulator
 import svsim._
 import chisel3.RawModule
 
-private trait Settings[T] {
-  val trace: T
-}
-
-private[simulator] case class TraceVcd(traceUnderscore: Boolean = false)
-    extends Settings[verilator.Backend.CompilationSettings.TraceStyle] {
-  val trace = verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore)
-}
-
-package object settings {
-  // Interface to the simulation
-  val EnableTrace               = TraceVcd(false)
-  val EnableTraceWithUnderscore = TraceVcd(true)
-}
-
+/**
+ * A simulator that uses [[svsim]] and [[PeekPokeAPI]] to run a simulation.
+ *
+ * It offers the possibility to output trace vcd file using the verilator
+ * backend.
+ */
 object BetterEphemeralSimulator extends PeekPokeAPI {
-  import chisel3.simulator.settings._
+  import svsim.verilator.Backend.CompilationSettings.TraceStyle
 
+  // Settings variable of the simulator
   private var _backendCompileSettings = verilator.Backend.CompilationSettings()
-
   private var _moduleDutName: String = ""
-
   private var _wantedWorkspacePath: String =
     Seq("test_run_dir", _moduleDutName, getClass.getSimpleName.stripSuffix("$")).mkString("/")
 
-  // Launch and execute a simulation
-  def simulate[T <: RawModule, S](module: => T, settings: Seq[Settings[S]] = Seq())(
+  /** Launch and execute a simulation given a list of [[Settings]]. */
+  def simulate[T <: RawModule, S <: TraceStyle](module: => T, settings: Seq[Settings[S]] = Seq())(
       body: T => Unit
   ): Unit =
     synchronized {
-      setBackendCompileSettings(settings) // Set the generic settings
-      simulator.simulate(module) { (controller, dut) =>
-        setControllerSettings(controller, settings)
-        println(_backendCompileSettings)
-        _wantedWorkspacePath = Seq("test_run_dir", dut.name, getClass.getSimpleName.stripSuffix("$")).mkString("/")
+      // Set the backend compile settings
+      setBackendCompileSettings(settings)
 
-        body(dut)
+      simulator.simulate(module) { simulatedModule =>
+        // Set the controller settings
+        setControllerSettings(simulatedModule.controller, settings)
+
+        _wantedWorkspacePath =
+          Seq(
+            "test_run_dir",
+            simulatedModule.elaboratedModule.wrapped.name,
+            getClass.getSimpleName.stripSuffix("$"),
+          ).mkString("/")
+
+        // Execute the simulation and return the result
+        body(simulatedModule.elaboratedModule.wrapped)
       }.result
     }
 
-  // Set the backend compile settings
+  /**
+   * Set the backend compile settings. It sets settings such as the trace style.
+   */
   private def setBackendCompileSettings[T](settings: Seq[Settings[T]]): Unit =
     settings.foreach {
       case t: TraceVcd =>
@@ -58,7 +59,10 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       case _ =>
     }
 
-  // Set the controller settings
+  /**
+   * Set the controller settings. It sets settings such as the trace output
+   * enable.
+   */
   private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[Settings[T]]): Unit =
     settings.foreach {
       case TraceVcd(_) => controller.setTraceEnabled(true)

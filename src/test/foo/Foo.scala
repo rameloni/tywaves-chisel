@@ -1,4 +1,4 @@
-package examples
+package foo
 
 //> using scala "2.13.12"
 //> using lib "org.chipsalliance::chisel::6.0.0"
@@ -36,8 +36,8 @@ trait Function0[@specialized(Unit, Int, Double) T] {
 }
 
 class Foo extends Module {
-  val x    = IO(Input(Bool())).suggestName("cia.o");
-  val s    = IO(Input(new MyBundle)).suggestName("cia_o")
+  val x    = IO(Input(Bool()))       // .suggestName("cia.o");
+  val s    = IO(Input(new MyBundle)) // .suggestName("cia_o")
   val io_a = Wire(Bool())
 
   val io = IO(new Bundle {
@@ -46,6 +46,7 @@ class Foo extends Module {
     val out = Output(UInt(8.W))
   })
 
+  val vec = VecInit(Seq.fill(4)(0.U(8.W)))
   val reg = RegInit(0.U(8.W))
 
   dontTouch(io_a)
@@ -56,31 +57,45 @@ class Foo extends Module {
   printf(p"s: $s\n")
 }
 
-object Main extends App {
+object MainFoo extends App {
 
-  val c = ChiselStage.convert(new Foo)
+  val stage = new ChiselStage
+  val c     = ChiselStage.convert(new Foo)
+
+//  println(
+//    ChiselStage.emitSystemVerilog(
+//      gen = new Foo,
+//      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info"),
+//    )
+//  )
+//
+//  println(
+//    ChiselStage.emitCHIRRTL(
+//      gen = new Foo
+////      args = Array("--help")
+//    )
+//  )
+//
+//  println(
+//    ChiselStage.emitFIRRTLDialect(
+//      gen = new Foo,
+////      args = Array("--help")
+////      firtoolOpts = Array("--chisel-interface-out-dir=outchisel")
+//      firtoolOpts = Array("-h", "--chisel-interface-out-dir=outchisel"),
+//    )
+//  )
+//
+//  println(
+//    ChiselStage.emitHWDialect(
+//      gen = new Foo
+////      firtoolOpts = Array("--help")
+//    )
+//  )
 
   println(
     ChiselStage.emitSystemVerilog(
-      gen = new Foo,
-      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info"),
+      new Foo,
+      firtoolOpts = Array("-g", "-emit-hgldd", "-output-final-mlir=Foo.mlir"),
     )
   )
-
-  println(
-    ChiselStage.emitCHIRRTL(
-      gen = new Foo
-//      args = Array("--help")
-    )
-  )
-
-  println(
-    ChiselStage.emitFIRRTLDialect(
-      gen = new Foo,
-//      args = Array("--help")
-//      firtoolOpts = Array("--chisel-interface-out-dir=outchisel")
-      firtoolOpts = Array("-h", "--chisel-interface-out-dir=outchisel"),
-    )
-  )
-
 }

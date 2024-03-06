@@ -1,4 +1,4 @@
-val chiselVersion    = "5.0.0"
+val chiselVersion    = "6.0.0"
 val scalatestVersion = "3.2.16"
 
 Compile / scalaSource := baseDirectory.value / "src/main"
