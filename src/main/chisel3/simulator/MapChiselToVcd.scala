@@ -1,6 +1,6 @@
 package chiselmapper
 import chisel3.RawModule
-import chisel3.simulator.{CircuitParser, HglddInfo}
+import chisel3.simulator.{CircuitParser, FirrtlIRParser, HglddInfo}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
@@ -53,7 +53,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   }
   val x = 0
 
-  val parser = (new CircuitParser)
+  val parser = (new FirrtlIRParser)
   parser.parse(circuitFirrtlIR)
   parser.dumpMaps()
 

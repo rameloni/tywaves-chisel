@@ -51,6 +51,13 @@ class Foo extends Module {
 
   dontTouch(io_a)
 
+//  val myInternalBundle = Wire(new MyBundle)
+//  myInternalBundle.a        := 0.U
+//  myInternalBundle.b        := 0.U
+//  myInternalBundle.c        := 0.U
+//  myInternalBundle.bundle.z := false.B
+//  dontTouch(myInternalBundle)
+
   io_a   := 1.U
   io.out := io.a + io.b
 
