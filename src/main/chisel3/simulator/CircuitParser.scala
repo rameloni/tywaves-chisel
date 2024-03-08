@@ -11,10 +11,11 @@ case class ElId(
 }
 
 case class Name(name: String, scope: String)
-case class Type(name: String)
+case class Type(name: String) // TODO: add pretty name to type
 case class HardwareType(name: String)
 case class Direction(name: String)
 trait CircuitParser[T] {
   def parse(circuit: T): Unit
+  def dumpMaps(fileDump: String): Unit
   def dumpMaps(): Unit
 }
