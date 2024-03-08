@@ -62,53 +62,10 @@ object MainFoo extends App {
   val stage = new ChiselStage
   val c     = ChiselStage.convert(new Foo)
 
-//  println(
-//    ChiselStage.emitSystemVerilog(
-//      gen = new Foo,
-//      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info"),
-//    )
-//  )
-//
   println(
     ChiselStage.emitCHIRRTL(
       gen = new Foo
-//      args = Array("--help")
     )
-  )
-//
-//  println(
-//    ChiselStage.emitFIRRTLDialect(
-//      gen = new Foo,
-////      args = Array("--help")
-////      firtoolOpts = Array("--chisel-interface-out-dir=outchisel")
-//      firtoolOpts = Array("-h", "--chisel-interface-out-dir=outchisel"),
-//    )
-//  )
-//
-//  println(
-//    ChiselStage.emitHWDialect(
-//      gen = new Foo
-////      firtoolOpts = Array("--help")
-//    )
-//  )
-
-//  println(
-//    ChiselStage.emitSystemVerilog(
-//      new Foo,
-//      firtoolOpts = Array("-g", "-emit-hgldd", "-output-final-mlir=Foo.mlir"),
-//    )
-//  )
-
-  println(
-  ChiselStage.emitSystemVerilog(
-    new Foo,
-    firtoolOpts = Array(
-      "-g",
-//      "--split-verilog",
-//      "-o=workdir",
-      "-emit-hgldd",
-    ),
-  )
   )
 
 }

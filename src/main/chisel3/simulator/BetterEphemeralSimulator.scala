@@ -3,10 +3,7 @@ package chisel3.simulator
 import svsim._
 import chisel3.RawModule
 import chiselmapper.MapChiselToVcd
-import os._
 
-import scala.reflect.io.Directory
-import java.io.File
 
 /**
  * A simulator that uses [[svsim]] and [[PeekPokeAPI]] to run a simulation.
@@ -33,7 +30,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
   ): Unit = {
 
     val mapChiselToVcd = new MapChiselToVcd(() => module)
-    mapChiselToVcd.printDebug()
+//    mapChiselToVcd.printDebug()
 
     // Set the backend compile settings
     setBackendCompileSettings(settings)

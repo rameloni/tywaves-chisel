@@ -1,12 +1,11 @@
-package chisel3
 package chiselmapper
 import chisel3.RawModule
+import chisel3.simulator.{CircuitParser, HglddInfo}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
-import firrtl.annotations.Annotation
-import firrtl.options.Viewer.view
 import firrtl.stage.FirrtlCircuitAnnotation
+import upickle.default._
 
 /** This object exposes the Convert phase used in ChiselStage */
 private object TypedConverter {
@@ -14,17 +13,18 @@ private object TypedConverter {
   private lazy val chiselStage = new circt.stage.ChiselStage
 
   val args = Array("--target", "systemverilog", "--split-verilog")
-  val annotations = Seq(
-    chisel3.stage.ChiselGeneratorAnnotation(() => new RawModule {}),
-    circt.stage.FirtoolOption("-disable-annotation-unknown"),
+  val defaultAnnotations = Seq(
+    circt.stage.FirtoolOption("-disable-annotation-unknown")
     //      firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath),
   )
 
   def addFirrtlAnno(annotations: AnnotationSeq): AnnotationSeq =
     converter.transform(annotations)
 
-  def getChiselStageAnno: AnnotationSeq =
+  def getChiselStageAnno[T <: RawModule](generateModule: () => T): AnnotationSeq = {
+    val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultAnnotations
     chiselStage.execute(args, annotations) // execute returns the passThrough annotations in CIRCT transform stage
+  }
 
 }
 
@@ -34,10 +34,10 @@ private object TypedConverter {
  * It is used to extract the Chisel IR and the Firrtl IR from the ChiselStage
  * and then use it to generate the VCD file.
  */
-class MapChiselToVcd[T <: RawModule](generateModule: () => T) {
+class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingdir") {
 
   // Step 1. Get the annotation from the execution of ChiselStage and add the FirrtlCircuitAnnotation
-  private val chiselStageAnno    = TypedConverter.getChiselStageAnno
+  private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule)
   private val completeChiselAnno = TypedConverter.addFirrtlAnno(chiselStageAnno)
 
   // Step 2. Extract the chiselIR and firrtlIR from the annotations
@@ -51,6 +51,11 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T) {
   }.getOrElse {
     throw new Exception("Could not find firrtl.stage.FirrtlCircuitAnnotation. It is expected after the ChiselStage")
   }
+  val x = 0
+
+  val parser = (new CircuitParser)
+  parser.parse(circuitFirrtlIR)
+  parser.dumpMaps()
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")
@@ -63,6 +68,8 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T) {
     println(circuitFirrtlIR.serialize)
 
   }
+
+
 
 //  apply()
 }
