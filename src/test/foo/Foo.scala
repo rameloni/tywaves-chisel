@@ -69,12 +69,12 @@ object MainFoo extends App {
 //    )
 //  )
 //
-//  println(
-//    ChiselStage.emitCHIRRTL(
-//      gen = new Foo
-////      args = Array("--help")
-//    )
-//  )
+  println(
+    ChiselStage.emitCHIRRTL(
+      gen = new Foo
+//      args = Array("--help")
+    )
+  )
 //
 //  println(
 //    ChiselStage.emitFIRRTLDialect(
@@ -92,10 +92,23 @@ object MainFoo extends App {
 //    )
 //  )
 
+//  println(
+//    ChiselStage.emitSystemVerilog(
+//      new Foo,
+//      firtoolOpts = Array("-g", "-emit-hgldd", "-output-final-mlir=Foo.mlir"),
+//    )
+//  )
+
   println(
-    ChiselStage.emitSystemVerilog(
-      new Foo,
-      firtoolOpts = Array("-g", "-emit-hgldd", "-output-final-mlir=Foo.mlir"),
-    )
+  ChiselStage.emitSystemVerilog(
+    new Foo,
+    firtoolOpts = Array(
+      "-g",
+//      "--split-verilog",
+//      "-o=workdir",
+      "-emit-hgldd",
+    ),
   )
+  )
+
 }

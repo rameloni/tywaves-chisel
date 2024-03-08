@@ -28,13 +28,15 @@ class FooTest extends AnyFlatSpec {
   behavior of "FooTest"
 
   it should "trace with underscore" in {
-    simulate(new Foo, Seq(simSettings.EnableTraceWithUnderscore)) {
+    // val testName = testNames.headOption.getOrElse("Unknown Test")
+    simulate(new Foo, Seq(simSettings.EnableTraceWithUnderscore), simName = "trace_with_underscore") {
+      println("Running test: " + it)
       RunFoo(_)
     }
   }
 
   it should "trace" in {
-    simulate(new Foo, Seq(simSettings.EnableTrace)) { c =>
+    simulate(new Foo, Seq(simSettings.EnableTrace), simName = "trace") { c =>
       c.io.a.poke(true)
       c.io.b.poke(0)
     }

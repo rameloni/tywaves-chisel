@@ -102,7 +102,7 @@ private[simulator] def elaborateGeneratedModuleInternal[T <: RawModule](
 ```scala
 // Imp: ChiselStage execute
 final def execute(args: Array[String], annotations: AnnotationSeq): AnnotationSeq =
-  transform(shell.parse(args, annotations))
+  transform(shell.parse(args, annotations)) // Imp: here the [[args]] and the [[annotations]] are merged together for the next step
 ```
 
 Stage is executed with some input annotations.
@@ -118,7 +118,7 @@ final def transform(annotations: AnnotationSeq): AnnotationSeq = {
       new phases.AddDefaults,
       new phases.Checks,
       new Phase {
-        def transform(a: AnnotationSeq) = run(a)
+        def transform(a: AnnotationSeq) = run(a) // THIS run is the method of the specific stage -> in my case ChiselStage
       }, // imp: here the chisel stage phases are executed
       new phases.WriteOutputAnnotations
     )
@@ -136,7 +136,7 @@ The annotations executed are:
 ### Step 3.2: ChiselStage run phases
 
 Thanks to these phases (and the one before (`AddDefaults`, `Checks`, `WriteOutputAnnotation`)) the circuit is elaborated
-and transformed into the final one
+and transformed into the final one.
 
 ```scala
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
