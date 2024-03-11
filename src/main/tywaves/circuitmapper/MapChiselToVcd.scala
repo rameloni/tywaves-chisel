@@ -1,31 +1,9 @@
 package tywaves.circuitmapper
 
 import chisel3.RawModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
+import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
-import firrtl.AnnotationSeq
 import firrtl.stage.FirrtlCircuitAnnotation
-
-/** This object exposes the Convert phase used in ChiselStage */
-private object TypedConverter {
-  private lazy val converter   = new chisel3.stage.phases.Convert
-  private lazy val chiselStage = new circt.stage.ChiselStage
-
-  private val args = Array("--target", "systemverilog", "--split-verilog")
-  private val defaultAnnotations = Seq(
-    circt.stage.FirtoolOption("-disable-annotation-unknown")
-    //      firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath),
-  )
-
-  def addFirrtlAnno(annotations: AnnotationSeq): AnnotationSeq =
-    converter.transform(annotations)
-
-  def getChiselStageAnno[T <: RawModule](generateModule: () => T): AnnotationSeq = {
-    val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultAnnotations
-    chiselStage.execute(args, annotations) // execute returns the passThrough annotations in CIRCT transform stage
-  }
-
-}
 
 /**
  * This class is used to map the Chisel IR to the VCD file.
@@ -55,9 +33,9 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   val chiselParser = new ChiselIRParser
 
   parser.parseCircuit(circuitFirrtlIR)
-  parser.dumpMaps("FirrtlIRParsing.log")
+  parser.dumpMaps(s"$workingDir/tywaves-log/FirrtlIRParsing.log")
   chiselParser.parseCircuit(circuitChiselIR)
-  chiselParser.dumpMaps("ChiselIRParsing.log")
+  chiselParser.dumpMaps(s"$workingDir/tywaves-log/ChiselIRParsing.log")
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")

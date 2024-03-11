@@ -1,11 +1,13 @@
 package tywaves.utils
 
+import java.nio.file.Paths
 import scala.collection.mutable
 
 class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
 
   private val _debugList = new mutable.ListBuffer[(K, V)]()
-  val debugList          = new mutable.ListBuffer[(K, V, Int)]()
+  private val debugList  = new mutable.ListBuffer[(K, V, Int)]()
+
   override def put(key: K, value: V): Option[V] = {
     if (super.contains(key)) {
       this.foreach(Console.err.println(_))
@@ -26,6 +28,8 @@ class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
   }
 
   def dumpFile(file: String, header: String, append: Boolean = true): Unit = {
+    val path = Paths.get(file)
+    java.nio.file.Files.createDirectories(path.getParent)
     val bw = new java.io.BufferedWriter(new java.io.FileWriter(file, append))
     bw.write(s"\n$header\n")
 

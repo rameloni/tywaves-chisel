@@ -30,9 +30,6 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       body: T => Unit
   ): Unit = {
 
-    val mapChiselToVcd = new MapChiselToVcd(() => module)
-//    mapChiselToVcd.printDebug()
-
     // Set the backend compile settings
     setBackendCompileSettings(settings)
 
@@ -52,8 +49,11 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       body(simulatedModule.wrapped)
     }.result
 
+
     // Cleanup the simulation after the execution
     simulator.cleanup()
+    println(_wantedWorkspacePath)
+    val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)
   }
 
   /**
