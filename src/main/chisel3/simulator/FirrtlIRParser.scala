@@ -103,12 +103,12 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
       case Block(stmts) => stmts.foreach(parse(scope, _))
       case DefWire(info, name, tpe) =>
         val elId = this.createId(info, Some(name))
-        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
+//        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
         parse(elId, Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
 
-      case DefRegisterWithReset(info, name, tpe, clock, reset, init) =>
+      case DefRegisterWithReset(info, name, tpe, _, _, _) =>
         val elId = this.createId(info, Some(name))
-        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
+//        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
         parse(elId, Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
 
       case _: Connect       => Console.err.println("Parsing Connect. Skip.")
@@ -130,64 +130,29 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
         ElId(specialPort.getOrElse("NoInfo"), 0, 0)
       case f: firrtlIR.FileInfo =>
         val (source, row, col) = f.split
-        ElId(source, row.toInt, col.toInt)
+        ElId(source, row.toInt, col.toInt, name = specialPort.getOrElse(""))
 
       case _ => throw new Exception(s"Failed to create ID from $info. Unknown type.")
     }
 
   override def dumpMaps(fileDump: String): Unit = {
-    // Create a new file
-    val file = new java.io.File(fileDump)
-    val bw   = new java.io.BufferedWriter(new java.io.FileWriter(file))
-
-    // Write the content
-    bw.write("Modules:\n")
-    modules.foreach { case (name, module) =>
-      bw.write(s"\t$name: $module\n")
-    }
-    bw.write("Ports:\n")
-    ports.foreach { case (name, port) =>
-      bw.write(s"\t$name: $port\n")
-    }
-
-    bw.write("\nFlattened Ports:\n")
-    flattenedPorts.foreach { case (name, port) =>
-      bw.write(s"\t$name: $port\n")
-    }
-
-    bw.write("\nInternal Elements:\n")
-    allElements.foreach { case (name, el) =>
-      bw.write(s"\t$name: $el\n")
-    }
-
-    // Close the file
-    bw.close()
-
+    modules.dumpFile(fileDump, "Modules:", append = false)
+    ports.dumpFile(fileDump, "Ports:")
+    flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
+    allElements.dumpFile(fileDump, "Internal Elements:")
   }
 
   override def dumpMaps(): Unit = {
     println()
     // Change color
     println(Console.CYAN)
-    println("Modules:")
-    modules.foreach { case (name, module) =>
-      println(s"\t$name: $module")
-    }
-    println("Ports:")
-    ports.foreach { case (name, port) =>
-      println(s"\t$name: $port")
-    }
 
-    println("\nFlattened Ports:")
-    flattenedPorts.foreach { case (name, port) =>
-      println(s"\t$name: $port")
-    }
+    modules.log("Modules:")
+    ports.log("Ports:")
+    flattenedPorts.log("Ports")
+    allElements.log("Internal Elements")
 
-    println(Console.GREEN)
-    println("\nInternal Elements:")
-    allElements.foreach { case (name, el) =>
-      println(s"\t$name: $el")
-    }
     println(Console.RESET)
   }
+
 }

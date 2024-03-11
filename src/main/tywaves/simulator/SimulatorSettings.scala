@@ -1,9 +1,9 @@
-package chisel3.simulator
+package tywaves.simulator
 
 import svsim.verilator
 
 /** Trait to represent the simulator settings */
-private trait Settings[T] {
+private trait SimulatorSettings[T] {
   val trace: T
 }
 
@@ -13,7 +13,7 @@ private trait Settings[T] {
  * the user of the simulator
  */
 private[simulator] case class TraceVcd(traceUnderscore: Boolean = false)
-    extends Settings[verilator.Backend.CompilationSettings.TraceStyle] {
+    extends SimulatorSettings[verilator.Backend.CompilationSettings.TraceStyle] {
   import verilator.Backend.CompilationSettings.TraceStyle
   val trace: TraceStyle = TraceStyle.Vcd(traceUnderscore)
 }

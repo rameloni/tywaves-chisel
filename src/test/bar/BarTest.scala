@@ -1,8 +1,8 @@
 package bar
 // The high level simulation API: it uses svsim internally
-import chisel3.simulator.BetterEphemeralSimulator._
-import chisel3.simulator.simSettings
+import tywaves.simulator.BetterEphemeralSimulator._
 import org.scalatest.flatspec.AnyFlatSpec
+import tywaves.simulator.simSettings
 
 object RunBarFoo {
   def apply(c: => BarFoo): Unit = {

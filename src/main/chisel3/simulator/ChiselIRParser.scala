@@ -149,66 +149,28 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
         println(Console.RED + "Warning: Bad ID NoSourceInfo" + Console.RESET)
         ElId(specialPort.getOrElse("NoInfo"), 0, 0)
       case SourceLine(source, row, col) =>
-        ElId(source, row, col)
+        ElId(source, row, col, specialPort.getOrElse(""))
 
       case _ => throw new Exception(s"Failed to create ID from $info. Unknown type.")
     }
 
   override def dumpMaps(fileDump: String): Unit = {
-
-    // Create a new file
-    val file = new java.io.File(fileDump)
-    val bw   = new java.io.BufferedWriter(new java.io.FileWriter(file))
-
-    // Write the content
-    bw.write("Modules:\n")
-    modules.foreach { case (name, module) =>
-      bw.write(s"\t$name: $module\n")
-    }
-    bw.write("Ports:\n")
-    ports.foreach { case (name, port) =>
-      bw.write(s"\t$name: $port\n")
-    }
-
-    bw.write("\nFlattened Ports:\n")
-    flattenedPorts.foreach { case (name, port) =>
-      bw.write(s"\t$name: $port\n")
-    }
-
-    bw.write("\nInternal Elements:\n")
-    allElements.foreach { case (name, el) =>
-      bw.write(s"\t$name: $el\n")
-    }
-
-    // Close the file
-    bw.close()
-
+    modules.dumpFile(fileDump, "Modules:", append = false)
+    ports.dumpFile(fileDump, "Ports:")
+    flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
+    allElements.dumpFile(fileDump, "Internal Elements:")
   }
 
   override def dumpMaps(): Unit = {
-
     println()
     // Change color
     println(Console.MAGENTA)
-    println("Modules:")
-    modules.foreach { case (name, module) =>
-      println(s"\t$name: $module")
-    }
-    println("Ports:")
-    ports.foreach { case (name, port) =>
-      println(s"\t$name: $port")
-    }
 
-    println("\nFlattened Ports:")
-    flattenedPorts.foreach { case (name, port) =>
-      println(s"\t$name: $port")
-    }
+    modules.log("Modules:")
+    ports.log("Ports:")
+    flattenedPorts.log("Ports")
+    allElements.log("Internal Elements")
 
-    println(Console.YELLOW)
-    println("\nInternal Elements:")
-    allElements.foreach { case (name, el) =>
-      println(s"\t$name: $el")
-    }
     println(Console.RESET)
   }
 }
