@@ -1,19 +1,18 @@
-package chiselmapper
+package tywaves.circuitmapper
+
 import chisel3.RawModule
-import chisel3.simulator.{ChiselIRParser, CircuitParser, FirrtlIRParser, HglddInfo}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
-import circt.stage.ChiselStage
+import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
 import firrtl.AnnotationSeq
 import firrtl.stage.FirrtlCircuitAnnotation
-import upickle.default._
 
 /** This object exposes the Convert phase used in ChiselStage */
 private object TypedConverter {
   private lazy val converter   = new chisel3.stage.phases.Convert
   private lazy val chiselStage = new circt.stage.ChiselStage
 
-  val args = Array("--target", "systemverilog", "--split-verilog")
-  val defaultAnnotations = Seq(
+  private val args = Array("--target", "systemverilog", "--split-verilog")
+  private val defaultAnnotations = Seq(
     circt.stage.FirtoolOption("-disable-annotation-unknown")
     //      firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath),
   )
@@ -51,13 +50,13 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   }.getOrElse {
     throw new Exception("Could not find firrtl.stage.FirrtlCircuitAnnotation. It is expected after the ChiselStage")
   }
-  val x = 0
 
-  val parser = new FirrtlIRParser
-  parser.parse(circuitFirrtlIR)
-  parser.dumpMaps("FirrtlIRParsing.log")
+  val parser       = new FirrtlIRParser
   val chiselParser = new ChiselIRParser
-  chiselParser.parse(circuitChiselIR)
+
+  parser.parseCircuit(circuitFirrtlIR)
+  parser.dumpMaps("FirrtlIRParsing.log")
+  chiselParser.parseCircuit(circuitChiselIR)
   chiselParser.dumpMaps("ChiselIRParsing.log")
 
   def printDebug(): Unit = {
@@ -69,8 +68,5 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     println("Firrtl IR:")
     println(circuitFirrtlIR)
     println(circuitFirrtlIR.serialize)
-
   }
-
-//  apply()
 }

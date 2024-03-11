@@ -1,8 +1,9 @@
-package chisel3.simulator
+package tywaves.simulator
 
-import svsim._
 import chisel3.RawModule
-import chiselmapper.MapChiselToVcd
+import chisel3.simulator.{PeekPokeAPI, SingleBackendSimulator}
+import svsim._
+import tywaves.circuitmapper.MapChiselToVcd
 
 
 /**
@@ -20,10 +21,10 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
   private var _wantedWorkspacePath: String =
     Seq("test_run_dir", _moduleDutName, getClass.getSimpleName.stripSuffix("$")).mkString("/")
 
-  /** Launch and execute a simulation given a list of [[Settings]]. */
+  /** Launch and execute a simulation given a list of [[SimulatorSettings]]. */
   def simulate[T <: RawModule, S <: TraceStyle](
       module:   => T,
-      settings: Seq[Settings[S]] = Seq(),
+      settings: Seq[SimulatorSettings[S]] = Seq(),
       simName:  String = "simulation",
   )(
       body: T => Unit
@@ -42,13 +43,13 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       _wantedWorkspacePath =
         Seq(
           "test_run_dir",
-          simulatedModule.elaboratedModule.wrapped.name,
+          simulatedModule.wrapped.name,
           getClass.getSimpleName.stripSuffix("$"),
           simName,
         ).mkString("/")
 
       // Execute the simulation and return the result
-      body(simulatedModule.elaboratedModule.wrapped)
+      body(simulatedModule.wrapped)
     }.result
 
     // Cleanup the simulation after the execution
@@ -58,7 +59,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
   /**
    * Set the backend compile settings. It sets settings such as the trace style.
    */
-  private def setBackendCompileSettings[T](settings: Seq[Settings[T]]): Unit =
+  private def setBackendCompileSettings[T](settings: Seq[SimulatorSettings[T]]): Unit =
     settings.foreach {
       case t: TraceVcd =>
         _backendCompileSettings =
@@ -76,7 +77,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
    * Set the controller settings. It sets settings such as the trace output
    * enable.
    */
-  private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[Settings[T]]): Unit =
+  private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[SimulatorSettings[T]]): Unit =
     settings.foreach {
       case TraceVcd(_) => controller.setTraceEnabled(true)
       case s           => println(s"Unknown setting $s")
