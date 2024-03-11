@@ -5,7 +5,6 @@ import chisel3.simulator.{PeekPokeAPI, SingleBackendSimulator}
 import svsim._
 import tywaves.circuitmapper.MapChiselToVcd
 
-
 /**
  * A simulator that uses [[svsim]] and [[PeekPokeAPI]] to run a simulation.
  *
@@ -49,11 +48,11 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       body(simulatedModule.wrapped)
     }.result
 
-
     // Cleanup the simulation after the execution
     simulator.cleanup()
     println(_wantedWorkspacePath)
     val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)
+    mapChiselToVcd.dumpLog()
   }
 
   /**

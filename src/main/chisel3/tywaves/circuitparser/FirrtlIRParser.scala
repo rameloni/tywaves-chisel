@@ -111,7 +111,8 @@ class FirrtlIRParser
       case aggr: VectorType => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
       case ClockType | AsyncResetType | ResetType |
           UIntType(_) | SIntType(_) | AnalogType(_) =>
-        flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(firrtlType.toString)))
+        if (hwType == HardwareType("Port"))
+          flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(firrtlType.toString)))
         allElements.put(elId.addName(name.name), (name, dir, Type(firrtlType.toString)))
       case _ => throw new Exception(s"Failed to parse type $firrtlType. Unknown type.")
     }

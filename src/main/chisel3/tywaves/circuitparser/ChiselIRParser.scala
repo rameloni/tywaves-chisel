@@ -116,7 +116,8 @@ class ChiselIRParser
       case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
       case _ =>
         // TODO: other cases need to be implemented. For now, simply add the element to the map
-        flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(dataType.typeName)))
+        if (hwType == HardwareType("Port"))
+          flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(dataType.typeName)))
         allElements.put(elId.addName(name.name), (name, dir, Type(dataType.typeName)))
       case _ => throw new Exception(s"Failed to parse type $dataType. Unknown type.")
     }

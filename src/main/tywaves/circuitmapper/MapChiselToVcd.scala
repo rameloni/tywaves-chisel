@@ -33,9 +33,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   val chiselParser = new ChiselIRParser
 
   parser.parseCircuit(circuitFirrtlIR)
-  parser.dumpMaps(s"$workingDir/tywaves-log/FirrtlIRParsing.log")
   chiselParser.parseCircuit(circuitChiselIR)
-  chiselParser.dumpMaps(s"$workingDir/tywaves-log/ChiselIRParsing.log")
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")
@@ -46,5 +44,11 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     println("Firrtl IR:")
     println(circuitFirrtlIR)
     println(circuitFirrtlIR.serialize)
+  }
+
+  def dumpLog(): Unit = {
+    val logSubDir = s"$workingDir/tywaves-log"
+    parser.dumpMaps(s"$logSubDir/FirrtlIRParsing.log")
+    chiselParser.dumpMaps(s"$logSubDir/ChiselIRParsing.log")
   }
 }

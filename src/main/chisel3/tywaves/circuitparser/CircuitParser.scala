@@ -28,7 +28,8 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
   def parseModule(module:   ModuleT): Unit
   def parsePort(scope:      String, port: PortT): Unit
   def parseAggregate(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, agg: AggregateT): Unit = {
-    flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(agg.getClass.getName)))
+    if (hwType == HardwareType("Port"))
+      flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(agg.getClass.getName)))
     allElements.put(elId.addName(name.name), (name, dir, Type(agg.getClass.getName)))
   }
 

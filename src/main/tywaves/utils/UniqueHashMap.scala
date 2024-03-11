@@ -34,7 +34,7 @@ class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
     bw.write(s"\n$header\n")
 
     debugList.foreach { case (key, value, count) =>
-      bw.write(s"$key: $value: $count\n")
+      bw.write(s"$count: $key: $value\n")
     }
     bw.close()
   }
@@ -42,7 +42,7 @@ class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
   def log(header: String = ""): Unit = {
     println(s"\n$header\n")
     debugList.foreach { case (key, value, count) =>
-      println(s"$key: $value: $count")
+      println(s"$count: $key: $value")
     }
   }
   def debugLog(): Unit =
