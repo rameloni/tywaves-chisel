@@ -1,20 +1,29 @@
-package chisel3.simulator
+package chisel3.tywaves.circuitparser
 
 import firrtl.{ir => firrtlIR}
+import tywaves.utils.UniqueHashMap
 
-class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
+class FirrtlIRParser
+    extends CircuitParser[
+      firrtlIR.Circuit,
+      firrtlIR.DefModule,
+      firrtlIR.Port,
+      firrtlIR.AggregateType,
+      firrtlIR.Type,
+      firrtlIR.Statement,
+    ] {
   // Collection of all modules in the circuit
-  lazy val modules        = new UniqueHashMap[ElId, (Name, firrtlIR.DefModule)]()
-  lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, firrtlIR.Port)]()
-  lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
-  lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
+  override lazy val modules        = new UniqueHashMap[ElId, (Name, firrtlIR.DefModule)]()
+  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, firrtlIR.Port)]()
+  override lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
+  override lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
 
   /** Parse a whole [[firrtlIR.Circuit]] */
-  override def parse(circuitFirrtlIR: firrtlIR.Circuit): Unit =
-    circuitFirrtlIR.modules.foreach(parse)
+  override def parseCircuit(circuitFirrtlIR: firrtlIR.Circuit): Unit =
+    circuitFirrtlIR.modules.foreach(parseModule)
 
   /** Parse a whole [[firrtlIR.DefModule]] */
-  def parse(firrtlModule: firrtlIR.DefModule): Unit = {
+  override def parseModule(firrtlModule: firrtlIR.DefModule): Unit = {
     // Parse generic info and create an ID for the module
     val (name, info) = (firrtlModule.name, firrtlModule.info)
     val elId         = this.createId(info)
@@ -24,9 +33,9 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
     // Parse the internals of the module
     firrtlModule match {
       case firrtlIR.Module(_, _, ports, body) =>
-        ports.foreach(parse(name, _))
+        ports.foreach(parsePort(name, _))
         // TODO: Parse the body:
-        parse(name, body)
+        parseBodyStatement(name, body)
       case firrtlIR.ExtModule(_, name, ports, defname, params) =>
         println(s"ExtModule: name: $name, ports: $ports, defname: $defname, params: $params")
 
@@ -35,7 +44,7 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
   }
 
   /** Parse a [[firrtlIR.Port]] */
-  def parse(scope: String, port: firrtlIR.Port): Unit = {
+  override def parsePort(scope: String, port: firrtlIR.Port): Unit = {
     // Parse generic info and create an ID for the port
     val (name, info, dir, firrtlType) = (port.name, port.info, port.direction, port.tpe)
     val elId                          = this.createId(info, Some(name))
@@ -49,8 +58,8 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
     firrtlType match {
       case agg: firrtlIR.AggregateType =>
         println(s"AggregateType: $agg")
-        parse(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
-      case _ => parse(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), firrtlType)
+        parseAggregate(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
+      case _ => parseElement(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), firrtlType)
     }
   }
 
@@ -60,19 +69,25 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
    * It unwraps Bundles and Vecs and executes specific parse functions of other
    * types.
    */
-  def parse(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, aggrType: firrtlIR.AggregateType): Unit = {
-    flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(aggrType.getClass.getName)))
-    allElements.put(elId.addName(name.name), (name, dir, Type(aggrType.getClass.getName)))
+  override def parseAggregate(
+      elId:     ElId,
+      name:     Name,
+      dir:      Direction,
+      hwType:   HardwareType,
+      aggrType: firrtlIR.AggregateType,
+  ): Unit = {
+    super.parseAggregate(elId, name, dir, hwType, aggrType)
+
     aggrType match {
-      case b @ firrtlIR.BundleType(fields) =>
-        fields.foreach { case firrtlIR.Field(fieldName, flip, tpe) =>
-          parse(elId, Name(fieldName, name.name), dir, hwType, tpe)
+      case firrtlIR.BundleType(fields) =>
+        fields.foreach { case firrtlIR.Field(fieldName, _, tpe) =>
+          parseElement(elId, Name(fieldName, name.name), dir, hwType, tpe)
         }
-      case v @ firrtlIR.VectorType(tpe, size) =>
+      case firrtlIR.VectorType(tpe, size) =>
         for (i <- 0 until size) {
           //          flattenedPorts.put(elId.addName(name.name + "[" + i + "]"), (name, dir, hwType, Type(tpe.toString)))
           //          internalElements.put(elId.addName(name.name + "[" + i + "]"), (name, dir, Type(tpe.toString)))
-          parse(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, tpe)
+          parseElement(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, tpe)
         }
       //        ??? // TODO: Implement
     }
@@ -83,11 +98,17 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
    *
    * This function handles special cases of aggregate types.
    */
-  def parse(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, firrtlType: firrtlIR.Type): Unit = {
+  override def parseElement(
+      elId:       ElId,
+      name:       Name,
+      dir:        Direction,
+      hwType:     HardwareType,
+      firrtlType: firrtlIR.Type,
+  ): Unit = {
     import firrtlIR._
     firrtlType match {
-      case aggr: BundleType => parse(elId, name, dir, hwType, aggr)
-      case aggr: VectorType => parse(elId, name, dir, hwType, aggr) // TODO: Implement
+      case aggr: BundleType => parseAggregate(elId, name, dir, hwType, aggr)
+      case aggr: VectorType => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
       case ClockType | AsyncResetType | ResetType |
           UIntType(_) | SIntType(_) | AnalogType(_) =>
         flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(firrtlType.toString)))
@@ -97,25 +118,25 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
   }
 
   /** Parse a [[firrtlIR.Statement]] */
-  def parse(scope: String, body: firrtlIR.Statement): Unit = {
+  def parseBodyStatement(scope: String, body: firrtlIR.Statement): Unit = {
     import firrtlIR._
     body match {
-      case Block(stmts) => stmts.foreach(parse(scope, _))
+      case Block(stmts) => stmts.foreach(parseBodyStatement(scope, _))
       case DefWire(info, name, tpe) =>
         val elId = this.createId(info, Some(name))
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parse(elId, Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
+        parseElement(elId, Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
 
       case DefRegisterWithReset(info, name, tpe, _, _, _) =>
         val elId = this.createId(info, Some(name))
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parse(elId, Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
+        parseElement(elId, Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
 
       case _: Connect       => Console.err.println("Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("Parsing DefNode. Skip.")
       case _: Conditionally => Console.err.println("Parsing Conditionally. Skip.")
       case a => // TODO: other cases to be implemented
-        println("aaa: " + a);
+        println("aaa: " + a)
         ???
     }
   }
@@ -134,25 +155,5 @@ class FirrtlIRParser extends CircuitParser[firrtlIR.Circuit] {
 
       case _ => throw new Exception(s"Failed to create ID from $info. Unknown type.")
     }
-
-  override def dumpMaps(fileDump: String): Unit = {
-    modules.dumpFile(fileDump, "Modules:", append = false)
-    ports.dumpFile(fileDump, "Ports:")
-    flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
-    allElements.dumpFile(fileDump, "Internal Elements:")
-  }
-
-  override def dumpMaps(): Unit = {
-    println()
-    // Change color
-    println(Console.CYAN)
-
-    modules.log("Modules:")
-    ports.log("Ports:")
-    flattenedPorts.log("Ports")
-    allElements.log("Internal Elements")
-
-    println(Console.RESET)
-  }
 
 }

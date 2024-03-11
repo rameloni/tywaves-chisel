@@ -2,8 +2,8 @@ package tywaves.simulator
 
 import chisel3.RawModule
 import chisel3.simulator.{PeekPokeAPI, SingleBackendSimulator}
-import chiselmapper.MapChiselToVcd
 import svsim._
+import tywaves.circuitmapper.MapChiselToVcd
 
 
 /**

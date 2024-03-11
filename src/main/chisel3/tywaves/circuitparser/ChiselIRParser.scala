@@ -1,21 +1,24 @@
-package chisel3.simulator
-import chisel3.{Aggregate, Bundle, Clock, Data, Vec, AsyncReset, UInt, SInt, Bool}
+package chisel3.tywaves.circuitparser
+
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine}
 import chisel3.internal.firrtl.{ir => chiselIR}
-import firrtl.ir.AsyncResetType
-class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
+import chisel3.{Aggregate, Bundle, Data, Vec}
+import tywaves.utils.UniqueHashMap
+
+class ChiselIRParser
+    extends CircuitParser[chiselIR.Circuit, chiselIR.Component, chiselIR.Port, Aggregate, Data, chiselIR.Command] {
   // Collection of all modules in the circuit
-  lazy val modules        = new UniqueHashMap[ElId, (Name, chiselIR.Component)]()
-  lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, chiselIR.Port)]()
-  lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
-  lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
+  override lazy val modules        = new UniqueHashMap[ElId, (Name, chiselIR.Component)]()
+  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, chiselIR.Port)]()
+  override lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
+  override lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
 
   /** Parse a whole [[chiselIR.Circuit]] */
-  override def parse(circuitChiselIR: chiselIR.Circuit): Unit =
-    circuitChiselIR.components.foreach(parse)
+  override def parseCircuit(circuitChiselIR: chiselIR.Circuit): Unit =
+    circuitChiselIR.components.foreach(parseModule) // each component is a module
 
-  /** Parse a whole [[chiselIR.DefModule]] */
-  def parse(chiselComponent: chiselIR.Component): Unit = {
+  /** Parse a chiselIR module = [[chiselIR.Component]] */
+  override def parseModule(chiselComponent: chiselIR.Component): Unit = {
     // Parse generic info and create an ID for the module
     val name = chiselComponent.name
     val elId = this.createId(SourceLine(name, 0, 0), Some(name))
@@ -25,9 +28,9 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
     // Parse the internals of the module
     chiselComponent match {
       case chiselIR.DefModule(_, _, ports, body) =>
-        ports.foreach(parse(name, _))
+        ports.foreach(parsePort(name, _))
         // TODO: Parse the body:
-        body.foreach(parse(name, _))
+        body.foreach(parseBodyStatement(name, _))
       case chiselIR.DefBlackBox(_, name, ports, topDir, params) =>
         println(s"DefBlackBox: name: $name, ports: $ports, topDir: $topDir, params: $params")
 
@@ -47,7 +50,7 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
    *     })
    * }}}
    */
-  def parse(scope: String, port: chiselIR.Port): Unit = {
+  override def parsePort(scope: String, port: chiselIR.Port): Unit = {
     val portData: Data = port.id
     // Parse generic info and create an ID for the port
     val (name, info, dir) = (portData.toNamed.name, port.sourceInfo, port.dir)
@@ -63,8 +66,8 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
       case agg: Aggregate =>
         // TODO: check this
         println(s"AggregateType: $agg")
-        parse(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
-      case _ => parse(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), portData)
+        parseAggregate(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
+      case _ => parseElement(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), portData)
     }
   }
 
@@ -77,18 +80,25 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
    * It unwraps Bundles and Vecs and executes specific parse functions of other
    * types.
    */
-  def parse(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, aggrType: Aggregate): Unit = {
-    flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(aggrType.getClass.getName)))
-    allElements.put(elId.addName(name.name), (name, dir, Type(aggrType.getClass.getName)))
+  override def parseAggregate(
+      elId:     ElId,
+      name:     Name,
+      dir:      Direction,
+      hwType:   HardwareType,
+      aggrType: Aggregate,
+  ): Unit = {
+
+    super.parseAggregate(elId, name, dir, hwType, aggrType)
+
     aggrType match {
       case b: Bundle =>
         b.elements.foreach { case (fieldName, dataType) =>
-          parse(elId, Name(fieldName, name.name), dir, hwType, dataType)
+          parseElement(elId, Name(fieldName, name.name), dir, hwType, dataType)
           println(s"AggregateType: $aggrType, dir: $dir, hwType: $hwType, name: $name")
         }
       case v: Vec[Data] =>
         for (i <- 0 until v.length) {
-          parse(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, v(i))
+          parseElement(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, v(i))
         }
 
     }
@@ -100,11 +110,11 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
    *
    * This function handles special cases of aggregate types.
    */
-  def parse(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, dataType: Data): Unit =
+  def parseElement(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, dataType: Data): Unit =
     dataType match {
-      case aggr: Bundle    => parse(elId, name, dir, hwType, aggr)
-      case aggr: Vec[Data] => parse(elId, name, dir, hwType, aggr) // TODO: Implement
-      case other =>
+      case aggr: Bundle    => parseAggregate(elId, name, dir, hwType, aggr)
+      case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
+      case _ =>
         // TODO: other cases need to be implemented. For now, simply add the element to the map
         flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(dataType.typeName)))
         allElements.put(elId.addName(name.name), (name, dir, Type(dataType.typeName)))
@@ -113,7 +123,7 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
   //  ??? // TODO: Implement for Data types
 
   /** Parse a [[chiselIR.Command]]. In FIRRTL, commands are Statements */
-  def parse(scope: String, body: chiselIR.Command): Unit =
+  override def parseBodyStatement(scope: String, body: chiselIR.Command): Unit =
     body match {
       case chiselIR.DefWire(sourceInfo, dataType) =>
         val elId = createId(sourceInfo)
@@ -121,7 +131,7 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
           elId,
           (Name(dataType.toNamed.name, scope), Direction(dataType.direction.toString), Type(dataType.typeName)),
         )
-        parse(
+        parseElement(
           elId,
           Name(dataType.toNamed.name, scope),
           Direction(dataType.direction.toString),
@@ -135,7 +145,7 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
       case _: chiselIR.WhenEnd    => Console.err.println("Parsing WhenEnd. Skip.")
       case _: chiselIR.Printf     => Console.err.println("Parsing Printf. Skip.")
       case a =>
-        println(s"aaaa: $a")
+        println(s"a a a: $a")
         ???
     }
   // TODO: Implement for commands -> Statements in FIRRTL
@@ -154,23 +164,4 @@ class ChiselIRParser extends CircuitParser[chiselIR.Circuit] {
       case _ => throw new Exception(s"Failed to create ID from $info. Unknown type.")
     }
 
-  override def dumpMaps(fileDump: String): Unit = {
-    modules.dumpFile(fileDump, "Modules:", append = false)
-    ports.dumpFile(fileDump, "Ports:")
-    flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
-    allElements.dumpFile(fileDump, "Internal Elements:")
-  }
-
-  override def dumpMaps(): Unit = {
-    println()
-    // Change color
-    println(Console.MAGENTA)
-
-    modules.log("Modules:")
-    ports.log("Ports:")
-    flattenedPorts.log("Ports")
-    allElements.log("Internal Elements")
-
-    println(Console.RESET)
-  }
 }
