@@ -4,6 +4,7 @@ import chisel3.RawModule
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
 import firrtl.stage.FirrtlCircuitAnnotation
+import tywaves.utils.UniqueHashMap
 
 /**
  * This class is used to map the Chisel IR to the VCD file.
@@ -11,10 +12,11 @@ import firrtl.stage.FirrtlCircuitAnnotation
  * It is used to extract the Chisel IR and the Firrtl IR from the ChiselStage
  * and then use it to generate the VCD file.
  */
-class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingdir") {
+class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingDir") {
 
+  private val logSubDir = s"$workingDir/tywaves-log"
   // Step 1. Get the annotation from the execution of ChiselStage and add the FirrtlCircuitAnnotation
-  private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule)
+  private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule, logSubDir)
   private val completeChiselAnno = TypedConverter.addFirrtlAnno(chiselStageAnno)
 
   // Step 2. Extract the chiselIR and firrtlIR from the annotations
@@ -29,11 +31,11 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     throw new Exception("Could not find firrtl.stage.FirrtlCircuitAnnotation. It is expected after the ChiselStage")
   }
 
-  val parser       = new FirrtlIRParser
-  val chiselParser = new ChiselIRParser
+  val firrtlIRParser = new FirrtlIRParser
+  val chiselIRParser = new ChiselIRParser
 
-  parser.parseCircuit(circuitFirrtlIR)
-  chiselParser.parseCircuit(circuitChiselIR)
+  firrtlIRParser.parseCircuit(circuitFirrtlIR)
+  chiselIRParser.parseCircuit(circuitChiselIR)
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")
@@ -47,8 +49,54 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   }
 
   def dumpLog(): Unit = {
-    val logSubDir = s"$workingDir/tywaves-log"
-    parser.dumpMaps(s"$logSubDir/FirrtlIRParsing.log")
-    chiselParser.dumpMaps(s"$logSubDir/ChiselIRParsing.log")
+    firrtlIRParser.dumpMaps(s"$logSubDir/FirrtlIRParsing.log")
+    chiselIRParser.dumpMaps(s"$logSubDir/ChiselIRParsing.log")
+  }
+
+  def mapCircuits(): Unit = {
+
+    def joinAndDump[K, V1, V2](
+        map1: UniqueHashMap[K, V1],
+        map2: UniqueHashMap[K, V2],
+    )(dumpfile: String, append: Boolean = true): Unit = {
+//      val join = map1.keySet.intersect(map2.keySet)
+      val join = map1.keySet.union(map2.keySet)
+        .map { key =>
+          (key, (map1.get(key), map2.get(key)))
+        }.toMap
+
+      val bw = new java.io.BufferedWriter(new java.io.FileWriter(dumpfile, append))
+      join.foreach {
+        case (elId, (firrtlIR, chiselIR)) =>
+          bw.write(s"elId: $elId\n" +
+            s"\tchiselIR: $chiselIR\n" +
+            s"\tfirrtlIR: $firrtlIR\n")
+      }
+      bw.close()
+    }
+
+    // Map modules
+    firrtlIRParser.modules.zip(chiselIRParser.modules).foreach {
+      case ((firrtlElId, (firrtlName, firrtlModule)), (chiselElId, (chiselName, chiselModule))) =>
+        println(s"firrtlElId: $firrtlElId, firrtlName: $firrtlName")
+        println(s"chiselElId: $chiselElId, chiselName: $chiselName")
+    }
+    println("Joined Modules:")
+    joinAndDump(firrtlIRParser.modules, chiselIRParser.modules)(s"$logSubDir/JoinedModules.log")
+    println("\n-----------------------------")
+
+    println("Joined Ports FirrtlIR:")
+    joinAndDump(firrtlIRParser.ports, chiselIRParser.ports)(s"$logSubDir/JoinedPorts.log")
+
+    println("\n-----------------------------")
+
+    println("Joined Flattened Ports FirrtlIR:")
+    joinAndDump(firrtlIRParser.flattenedPorts, chiselIRParser.flattenedPorts)(s"$logSubDir/JoinedFlattenedPorts.log")
+
+    println("\n-----------------------------")
+
+    println("Joined All Elements FirrtlIR:")
+    joinAndDump(firrtlIRParser.allElements, chiselIRParser.allElements)(s"$logSubDir/JoinedAllElements.log")
+
   }
 }

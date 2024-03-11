@@ -2,6 +2,7 @@ package chisel3.tywaves.circuitparser
 
 import firrtl.{ir => firrtlIR}
 import tywaves.utils.UniqueHashMap
+import tywaves.circuitmapper.{ElId, Name, Direction, Type, HardwareType}
 
 class FirrtlIRParser
     extends CircuitParser[
@@ -14,7 +15,7 @@ class FirrtlIRParser
     ] {
   // Collection of all modules in the circuit
   override lazy val modules        = new UniqueHashMap[ElId, (Name, firrtlIR.DefModule)]()
-  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, firrtlIR.Port)]()
+  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, firrtlIR.Port*/ )]()
   override lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
   override lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
 
@@ -51,7 +52,7 @@ class FirrtlIRParser
 
     ports.put(
       elId,
-      (Name(name, scope), Direction(dir.toString), Type(firrtlType.toString), port),
+      (Name(name, scope), Direction(dir.toString), Type(firrtlType.getClass.getSimpleName) /*, port*/ ),
     ) // Add the port and its name
 
     // Parse the type to build flattened ports
@@ -122,16 +123,14 @@ class FirrtlIRParser
   def parseBodyStatement(scope: String, body: firrtlIR.Statement): Unit = {
     import firrtlIR._
     body match {
-      case Block(stmts) => stmts.foreach(parseBodyStatement(scope, _))
+      case Block(stmts)             => stmts.foreach(parseBodyStatement(scope, _))
       case DefWire(info, name, tpe) =>
-        val elId = this.createId(info, Some(name))
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(elId, Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
+        parseElement(createId(info, Some(name)), Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
 
       case DefRegisterWithReset(info, name, tpe, _, _, _) =>
-        val elId = this.createId(info, Some(name))
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(elId, Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
+        parseElement(createId(info, Some(name)), Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
 
       case _: Connect       => Console.err.println("Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("Parsing DefNode. Skip.")

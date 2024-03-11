@@ -4,12 +4,13 @@ import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine}
 import chisel3.internal.firrtl.{ir => chiselIR}
 import chisel3.{Aggregate, Bundle, Data, Vec}
 import tywaves.utils.UniqueHashMap
+import tywaves.circuitmapper.{ElId, Name, Direction, Type, HardwareType}
 
 class ChiselIRParser
     extends CircuitParser[chiselIR.Circuit, chiselIR.Component, chiselIR.Port, Aggregate, Data, chiselIR.Command] {
   // Collection of all modules in the circuit
   override lazy val modules        = new UniqueHashMap[ElId, (Name, chiselIR.Component)]()
-  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type, chiselIR.Port)]()
+  override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, chiselIR.Port*/ )]()
   override lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
   override lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
 
@@ -52,13 +53,14 @@ class ChiselIRParser
    */
   override def parsePort(scope: String, port: chiselIR.Port): Unit = {
     val portData: Data = port.id
+
     // Parse generic info and create an ID for the port
     val (name, info, dir) = (portData.toNamed.name, port.sourceInfo, port.dir)
     val elId              = this.createId(info, Some(name))
 
     ports.put(
       elId,
-      (Name(name, scope), Direction(dir.toString), Type(portData.typeName), port),
+      (Name(name, scope), Direction(dir.toString), Type(portData.typeName) /*, port*/ ), // Fixme: type name
     ) // Add the port and its name
 
     // Types from here: https://github.com/chipsalliance/chisel?tab=readme-ov-file#data-types-overview
@@ -124,31 +126,34 @@ class ChiselIRParser
   //  ??? // TODO: Implement for Data types
 
   /** Parse a [[chiselIR.Command]]. In FIRRTL, commands are Statements */
-  override def parseBodyStatement(scope: String, body: chiselIR.Command): Unit =
-    body match {
-      case chiselIR.DefWire(sourceInfo, dataType) =>
-        val elId = createId(sourceInfo)
-        allElements.put(
-          elId,
-          (Name(dataType.toNamed.name, scope), Direction(dataType.direction.toString), Type(dataType.typeName)),
-        )
-        parseElement(
-          elId,
-          Name(dataType.toNamed.name, scope),
-          Direction(dataType.direction.toString),
-          HardwareType("Wire"),
-          dataType,
-        )
-      case _: chiselIR.Connect    => Console.err.println("Parsing Connect. Skip.")
-      case _: chiselIR.DefRegInit => Console.err.println("Parsing DefRegInit. Skip.")
-      case _: chiselIR.DefPrim[?] => Console.err.println("Parsing DefPrim. Skip.")
-      case _: chiselIR.WhenBegin  => Console.err.println("Parsing WhenBegin. Skip.")
-      case _: chiselIR.WhenEnd    => Console.err.println("Parsing WhenEnd. Skip.")
-      case _: chiselIR.Printf     => Console.err.println("Parsing Printf. Skip.")
+  override def parseBodyStatement(scope: String, body: chiselIR.Command): Unit = {
+    val parseRes = body match {
+      case chiselIR.DefWire(sourceInfo, dataType)             => Some((sourceInfo, dataType, HardwareType("Wire")))
+      case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register")))
+      case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register")))
+
+      case _: chiselIR.Connect    => Console.err.println("Parsing Connect. Skip."); None
+      case _: chiselIR.DefPrim[?] => Console.err.println("Parsing DefPrim. Skip."); None
+      case _: chiselIR.WhenBegin  => Console.err.println("Parsing WhenBegin. Skip."); None
+      case _: chiselIR.WhenEnd    => Console.err.println("Parsing WhenEnd. Skip."); None
+      case _: chiselIR.Printf     => Console.err.println("Parsing Printf. Skip."); None
       case a =>
         println(s"a a a: $a")
         ???
     }
+    parseRes match {
+      case Some((sourceInfo, dataType, hwType)) =>
+        parseElement(
+          createId(sourceInfo),
+          Name(dataType.toNamed.name, scope),
+          Direction(dataType.direction.toString),
+          hwType,
+          dataType,
+        )
+      case None => // Skip
+    }
+
+  }
   // TODO: Implement for commands -> Statements in FIRRTL
 
   /**

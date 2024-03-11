@@ -18,9 +18,12 @@ private object TypedConverter {
   def addFirrtlAnno(annotations: AnnotationSeq): AnnotationSeq =
     converter.transform(annotations)
 
-  def getChiselStageAnno[T <: RawModule](generateModule: () => T): AnnotationSeq = {
+  def getChiselStageAnno[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): AnnotationSeq = {
     val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultAnnotations
-    chiselStage.execute(args, annotations) // execute returns the passThrough annotations in CIRCT transform stage
+    chiselStage.execute(
+      args ++ Array("--target-dir", workingDir),
+      annotations,
+    ) // execute returns the passThrough annotations in CIRCT transform stage
   }
 
 }
