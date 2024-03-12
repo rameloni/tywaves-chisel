@@ -132,14 +132,14 @@ class HglddParseTest extends AnyFlatSpec {
 
   it should "parse a Hgldd file" in {
     val debugParser = new DebugIRParser
-    println(debugParser.parseFile("workingDir", tmpFile.toString))
+    println(debugParser.parseFile(tmpFile.toString))
   }
 
   it should "parse an actual Hgldd file" in {
     // Generate the Hgldd file
     val outFile     = GenerateHgldd(() => new Foo, tmpDir.toString) + "/Foo.dd"
     val debugParser = new DebugIRParser
-    println(debugParser.parseFile("workingDir", outFile))
+    println(debugParser.parseFile(outFile))
   }
 
   it should "parse all infos" in {
@@ -151,7 +151,7 @@ class HglddParseTest extends AnyFlatSpec {
     // Generate the Hgldd file
     val ddFile      = GenerateHgldd(() => new Foo, tmpDir.toString) + "/Foo.dd"
     val debugParser = new DebugIRParser
-    val parsedObj   = debugParser.parseFile("workingDir", ddFile)
+    val parsedObj   = debugParser.parseFile(ddFile)
 
     // Read the outFile
     val sourceHgldd = {
