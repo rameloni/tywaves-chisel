@@ -18,7 +18,7 @@ object RunBarFoo {
 }
 
 class BarTest extends AnyFlatSpec {
-  behavior of "FooTest"
+  behavior of "BarTest"
 
   it should "trace with underscore" in {
     simulate(new BarFoo, Seq(simSettings.EnableTraceWithUnderscore)) {

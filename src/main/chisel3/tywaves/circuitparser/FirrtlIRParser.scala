@@ -132,9 +132,9 @@ class FirrtlIRParser
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
         parseElement(createId(info, Some(name)), Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
 
-      case _: Connect       => Console.err.println("Parsing Connect. Skip.")
-      case _: DefNode       => Console.err.println("Parsing DefNode. Skip.")
-      case _: Conditionally => Console.err.println("Parsing Conditionally. Skip.")
+      case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
+      case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")
+      case _: Conditionally => Console.err.println("FirrtlIR parser: Parsing Conditionally. Skip.")
       case a => // TODO: other cases to be implemented
         println("aaa: " + a)
         ???

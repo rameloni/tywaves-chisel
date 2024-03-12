@@ -60,8 +60,8 @@ class ChiselIRParser
 
     ports.put(
       elId,
-      (Name(name, scope), Direction(dir.toString), Type(portData.typeName) /*, port*/ ), // Fixme: type name
-    ) // Add the port and its name
+      (Name(name, scope), Direction(dir.toString), Type(portData.typeName) /*, port*/ ),// Fixme: type name
+    )                                                                                   // Add the port and its name
 
     // Types from here: https://github.com/chipsalliance/chisel?tab=readme-ov-file#data-types-overview
     portData match {
@@ -132,11 +132,11 @@ class ChiselIRParser
       case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register")))
       case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register")))
 
-      case _: chiselIR.Connect    => Console.err.println("Parsing Connect. Skip."); None
-      case _: chiselIR.DefPrim[?] => Console.err.println("Parsing DefPrim. Skip."); None
-      case _: chiselIR.WhenBegin  => Console.err.println("Parsing WhenBegin. Skip."); None
-      case _: chiselIR.WhenEnd    => Console.err.println("Parsing WhenEnd. Skip."); None
-      case _: chiselIR.Printf     => Console.err.println("Parsing Printf. Skip."); None
+      case _: chiselIR.Connect    => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
+      case _: chiselIR.DefPrim[?] => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None
+      case _: chiselIR.WhenBegin  => Console.err.println("ChiselIRParser: Parsing WhenBegin. Skip."); None
+      case _: chiselIR.WhenEnd    => Console.err.println("ChiselIRParser: Parsing WhenEnd. Skip."); None
+      case _: chiselIR.Printf     => Console.err.println("ChiselIRParser: Parsing Printf. Skip."); None
       case a =>
         println(s"a a a: $a")
         ???

@@ -4,6 +4,7 @@ import chisel3.RawModule
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
 import firrtl.stage.FirrtlCircuitAnnotation
+import tywaves.hglddparser.DebugIRParser
 import tywaves.utils.UniqueHashMap
 
 /**
@@ -14,7 +15,7 @@ import tywaves.utils.UniqueHashMap
  */
 class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingDir") {
 
-  private val logSubDir = s"$workingDir/tywaves-log"
+  val logSubDir = s"$workingDir/tywaves-log"
   // Step 1. Get the annotation from the execution of ChiselStage and add the FirrtlCircuitAnnotation
   private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule, logSubDir)
   private val completeChiselAnno = TypedConverter.addFirrtlAnno(chiselStageAnno)
@@ -31,11 +32,17 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     throw new Exception("Could not find firrtl.stage.FirrtlCircuitAnnotation. It is expected after the ChiselStage")
   }
 
+  // Step 3. Parse the ChiselIR and FirrtlIR. In this step modules, ports, and internal elements are extracted
+  //  They are stored in UniqueHashMaps and associated with their respective elementIds
   val firrtlIRParser = new FirrtlIRParser
   val chiselIRParser = new ChiselIRParser
 
   firrtlIRParser.parseCircuit(circuitFirrtlIR)
   chiselIRParser.parseCircuit(circuitChiselIR)
+
+  // Step 4. Parse the debug information
+  val debugIRParser = new DebugIRParser
+  debugIRParser.parse(generateModule, workingDir, TypedConverter.getDebugIRFile)
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")
@@ -48,11 +55,21 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     println(circuitFirrtlIR.serialize)
   }
 
+  /** This method is used to dump the parsed maps to the log directory. */
   def dumpLog(): Unit = {
     firrtlIRParser.dumpMaps(s"$logSubDir/FirrtlIRParsing.log")
     chiselIRParser.dumpMaps(s"$logSubDir/ChiselIRParsing.log")
   }
 
+  /**
+   * This method is used to map the Chisel IR to the VCD file. It tries to
+   * associate each element of Chisel IR with Firrtl IR. If an element of the
+   * next IR is not found a None is returned for the missing IR. Thus the output
+   * will be something similar to:
+   *   - `(Some(..), Some(..))`
+   *   - `(Some(..), None)`
+   *   - `(None, Some(..))`
+   */
   def mapCircuits(): Unit = {
 
     def joinAndDump[K, V1, V2](
