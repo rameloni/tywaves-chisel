@@ -17,7 +17,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
   val logSubDir = s"$workingDir/tywaves-log"
   // Step 1. Get the annotation from the execution of ChiselStage and add the FirrtlCircuitAnnotation
-  private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule, logSubDir)
+  private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule, workingDir = logSubDir)
   private val completeChiselAnno = TypedConverter.addFirrtlAnno(chiselStageAnno)
 
   // Step 2. Extract the chiselIR and firrtlIR from the annotations
@@ -42,7 +42,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
   // Step 4. Parse the debug information
   val debugIRParser = new DebugIRParser
-  debugIRParser.parse(generateModule, workingDir, TypedConverter.getDebugIRFile)
+  debugIRParser.parse(logSubDir, TypedConverter.getDebugIRFile)
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")

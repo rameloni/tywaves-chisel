@@ -50,6 +50,7 @@ class Foo extends Module {
   val reg = RegInit(0.U(8.W))
 
   dontTouch(io_a)
+  dontTouch(vec)
 
 //  val myInternalBundle = Wire(new MyBundle)
 //  myInternalBundle.a        := 0.U

@@ -139,6 +139,7 @@ class ChiselIRParser
       case _: chiselIR.Printf     => Console.err.println("ChiselIRParser: Parsing Printf. Skip."); None
       case a =>
         println(s"a a a: $a")
+        None
         ???
     }
     parseRes match {

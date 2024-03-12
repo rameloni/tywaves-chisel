@@ -18,7 +18,7 @@ package object hglddparser {
    * @param file_info
    *   The list of files about the generated circuit
    * @param hdl_file_index
-   *   The number of files specified in the file_info list
+   *   The index of the hdl file in the [[file_info]] list
    */
   case class HglddHeader(version: String, file_info: Seq[String], hdl_file_index: Int)
 
@@ -54,7 +54,14 @@ package object hglddparser {
   )
   case class HdlLocation(begin_line: Int, end_line: Int, file: Int) // Imp: I can parse only the fields I need
 
-  /** Represents a port variable */
+  /**
+   * Represents a port variable.
+   *
+   * @param var_name
+   *   the name of the variable (local name)
+   * @param type_name
+   *   the type in the HDL
+   */
   case class PortVar(
       var_name:       String,
       hgl_loc:        HglLocation,
