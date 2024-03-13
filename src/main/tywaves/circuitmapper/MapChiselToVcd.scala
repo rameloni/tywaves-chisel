@@ -41,8 +41,12 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   chiselIRParser.parseCircuit(circuitChiselIR)
 
   // Step 4. Parse the debug information
-  val debugIRParser = new DebugIRParser
-  debugIRParser.parse(logSubDir, TypedConverter.getDebugIRFile)
+  val gDebugIRParser = new DebugIRParser(workingDir, TypedConverter.getDebugIRFile(gOpt = true))
+  val debugIRParser =
+    new DebugIRParser(workingDir, TypedConverter.getDebugIRFile(gOpt = false)) // TODO: check if this is needed or not
+
+  gDebugIRParser.parse()
+  debugIRParser.parse()
 
   def printDebug(): Unit = {
     println("Chisel Stage Annotations:")
@@ -59,6 +63,9 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   def dumpLog(): Unit = {
     firrtlIRParser.dumpMaps(s"$logSubDir/FirrtlIRParsing.log")
     chiselIRParser.dumpMaps(s"$logSubDir/ChiselIRParsing.log")
+
+    gDebugIRParser.dump(s"$logSubDir/gDebugIRParser.log")
+    debugIRParser.dump(s"$logSubDir/DebugIRParser.log")
   }
 
   /**

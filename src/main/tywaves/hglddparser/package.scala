@@ -23,7 +23,9 @@ package object hglddparser {
   case class HglddHeader(version: String, file_info: Seq[String], hdl_file_index: Int)
 
   /**
-   * An object containing information about the hgl and hdl.
+   * An object containing information about the hgl and hdl. This object stores
+   * somehow a high level information like the hierarchy and the name used in
+   * Chisel. While the sig_name of value contains the hierarchy and verilog name.
    *
    * @param kind
    *   The kind of object (e.g. struct, module, etc.)

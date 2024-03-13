@@ -173,9 +173,9 @@ class HglddParseTest extends AnyFlatSpec {
   it should "parse hgldd with DebugIR" in {
     // Generate the Hgldd file
     val ddFile      = GenerateHgldd(() => new Foo, tmpDir.toString) + "/Foo.dd"
-    val debugParser = new DebugIRParser
-    debugParser.parse(tmpDir.toString, ddFile)
+    val debugParser = new DebugIRParser(tmpDir.toString, ddFile)
 
+    println("Done")
   }
 
 }

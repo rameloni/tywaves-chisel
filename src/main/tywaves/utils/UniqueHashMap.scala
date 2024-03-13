@@ -33,16 +33,16 @@ class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
     val bw = new java.io.BufferedWriter(new java.io.FileWriter(file, append))
     bw.write(s"\n$header\n")
 
-    debugList.foreach { case (key, value, count) =>
-      bw.write(s"$count: $key: $value\n")
+    this.foreach { case (key, value) =>
+      bw.write(s"$key: $value\n")
     }
     bw.close()
   }
 
   def log(header: String = ""): Unit = {
     println(s"\n$header\n")
-    debugList.foreach { case (key, value, count) =>
-      println(s"$count: $key: $value")
+    this.foreach { case (key, value) =>
+      println(s"$key: $value")
     }
   }
   def debugLog(): Unit =

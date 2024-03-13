@@ -13,9 +13,17 @@ private object TypedConverter {
 
   private val args = Array("--target", "systemverilog", "--split-verilog")
 
+  private var hglddDebugDir   = "hgldd/debug"
+  private var hglddWithOptDir = "hgldd/opt"
+
   // In the default annotations, emit also the debug hgldd file (a json file containing info from the debug dialect)
   private val defaultAnnotations =
-    createFirtoolOptions(Seq("-disable-annotation-unknown", "-g", "--emit-hgldd" /*,"--output-final-mlir=WORK.mlir"*/ ))
+    createFirtoolOptions(Seq(
+//      "-disable-annotation-unknown",
+      "--emit-hgldd",
+      "--hgldd-output-prefix=<path>",
+      /*,"--output-final-mlir=WORK.mlir"*/
+    ))
 
   private var workingDir: Option[String] = None
 
@@ -31,27 +39,36 @@ private object TypedConverter {
   /** This function is used to elaborate the circuit and get the ChiselIR */
   def getChiselStageAnno[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): AnnotationSeq = {
     this.workingDir = Some(workingDir)
+    hglddWithOptDir = workingDir + "/" + hglddWithOptDir
+    hglddDebugDir = workingDir + "/" + hglddDebugDir
+
     val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultAnnotations
     chiselStage.execute(
-      args ++ Array("--target-dir", workingDir),
+      args ++ Array("--target-dir", hglddWithOptDir),
       annotations,
     ) // execute returns the passThrough annotations in CIRCT transform stage
+
+    chiselStage.execute(
+      args ++ Array("--target-dir", hglddDebugDir),
+      annotations ++ Seq(circt.stage.FirtoolOption("-g")),
+      // execute returns the passThrough annotations in CIRCT transform stage
+    )
   }
 
   /** Get the name of the debug file */
-  def getDebugIRFile: String = {
-    val workingDir = this.workingDir match {
-      case None =>
-        throw new Exception("This function should be called after getChiselStageAnno. WorkingDir is not set.")
-      case Some(wd) => new java.io.File(wd)
+  def getDebugIRFile(gOpt: Boolean): String = {
+
+    def getFile(_workingDir: String): String = {
+      val workingDir = new java.io.File(_workingDir)
+      // Open the HGLDD file and extract the information
+      if (workingDir.exists() && workingDir.isDirectory) {
+        workingDir.listFiles().filter(_.getName.endsWith(debugFileExt)).head.getAbsolutePath
+      } else
+        throw new Exception(s"WorkingDir: $workingDir does not exist or is not a directory.")
     }
 
-    // Open the HGLDD file and extract the information
-    if (workingDir.exists() && workingDir.isDirectory) {
-      workingDir.listFiles().filter(_.getName.endsWith(debugFileExt)).head.getAbsolutePath
-    } else
-      throw new Exception(s"WorkingDir: $workingDir does not exist or is not a directory.")
-
+    if (gOpt) getFile(this.hglddDebugDir)
+    else getFile(this.hglddWithOptDir)
   }
 }
 

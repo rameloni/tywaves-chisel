@@ -8,13 +8,26 @@ import tywaves.utils.UniqueHashMap
 
 import scala.io.Source
 case class VerilogSignals(names: Seq[String])
-class DebugIRParser {
+class DebugIRParser(val workingDir: String, ddFilePath: String) {
+
+  def this() = this("workingDir", "ddFilePath")
 
   lazy val modules        = new UniqueHashMap[ElId, Name]()
   lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, chiselIR.Port*/ )]()
   lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
   lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
   lazy val signals        = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type, VerilogSignals)]()
+
+  private var nameUpdate = false
+  def dump(fileDump: String): Unit = {
+    if (!nameUpdate) throw new Exception("The name of the file has been updated. Please use the new name.")
+    modules.dumpFile(fileDump, "Modules:", append = false)
+    ports.dumpFile(fileDump, "Ports:")
+    flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
+    allElements.dumpFile(fileDump, "Internal Elements:")
+    signals.dumpFile(fileDump, "Signals:")
+
+  }
 
   /**
    * Parse a given string in `hgldd` format.
@@ -38,7 +51,6 @@ class DebugIRParser {
    */
   def parseFile(ddFilePath: String): hglddparser.HglddTopInterface = {
     // Imp: for the future the "file_info" property is a relative path from the working directory
-    println("DebugIRParser: parse. ddFilePath: " + ddFilePath)
 
     // Open the file HglDD file and convert it to a string
     val sourceHgldd = Source.fromFile(ddFilePath)
@@ -56,7 +68,7 @@ class DebugIRParser {
    * @param ddFilePath
    *   the input file to parse
    */
-  def parse(workingDir: String, ddFilePath: String): Unit = {
+  def parse(): Unit = {
     val hgldd = parseFile(ddFilePath)
     println("DebugIRParser: parse. hgldd: " + hgldd)
     val (fileInfo, hdlFileActualIndex) = (hgldd.HGLDD.file_info, hgldd.HGLDD.hdl_file_index - 1)
@@ -70,19 +82,8 @@ class DebugIRParser {
         _,
       )
     )
-    println("======================")
-    println("Modules")
-    modules.foreach(println)
-    println("======================")
-    println("Flattened ports")
-    flattenedPorts.foreach(println)
-    println("======================")
-    println("All elements")
-    allElements.foreach(println)
-    println("======================")
-    println("Module Signals")
-    signals.foreach(println)
 
+    updateSignals()
   }
 
   /** Parse an object from the HGLDD representation */
@@ -95,12 +96,14 @@ class DebugIRParser {
     // Drop the scope from the object name
     val obj_name =
       scope match { case "root" => hglddObject.obj_name; case _ => hglddObject.obj_name.substring(scope.length + 1) }
-    val elId = createId(fileInfo, hglddObject.hgl_loc, obj_name)
+    val elId =
+      createId(fileInfo, hglddObject.hgl_loc, obj_name)
 
     // Step 2: Parse the kind of the object
     hglddObject.kind match {
       case s @ "struct" =>
         allElements.put(elId, (Name(obj_name, scope), Direction("Unknown"), Type(s)))
+        hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name))
       case "module" =>
         modules.put(elId, Name(obj_name, scope))
         hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name))
@@ -125,12 +128,63 @@ class DebugIRParser {
     val typ   = Type(portVar.type_name)
     val hwTyp = HardwareType(portVar.type_name)
 
-    val sigNames = portVar.value match {
-      case None        => VerilogSignals(Seq(portVar.var_name))
-      case Some(value) => VerilogSignals(collectSigNames(value))
-
-    }
+    val sigNames =
+      portVar.value match {
+        case None        => VerilogSignals(Seq(portVar.var_name))
+        case Some(value) => VerilogSignals(collectSigNames(value))
+      }
+//    val sigNames = VerilogSignals(Seq(portVar.var_name))
     signals.put(elId, (name, dir, hwTyp, typ, sigNames))
+  }
+
+  /**
+   * Update the [[signals]] in order to associate their actual system verilog
+   * name. Some signals are part of a complex type, for example a bundle/struct.
+   *
+   * The [[signals]] list contains all the signals in the HGLDD file associated
+   * to their system verilog name which should be contained in the
+   * [[Value.sig_name]] variable. However, when they are children of a complex
+   * type (no "logic", "wire", or "register") their [[Value.sig_name]] does not
+   * match the actual system verilog name.
+   *
+   * A signal that is complex type has a [[Type.name]] that is not "logic", and
+   * it contains a list of [[Value.sig_name]]s which should be the actual system
+   * verilog name. This function associates these names to their respective
+   * signals in [[signals]].
+   *
+   * It updates that name by doing the following steps:
+   *
+   *   1. Find all the complex types elements (i.e. not logic, wire, or
+   *      register) and assign the `scope` as its type.
+   *   1. Get the list of actual system verilog names (children signals of
+   *      `scope`) from the [[Value.sig_name]].
+   *   1. From [[signals]] search those signals within the `scope` and update
+   *      with their new name.
+   */
+//  Find all the elements that are not logic, wire, or register
+  // if a signal is not a logic, wire, or register, it has a complex type,
+  // find and update the name of that signals
+  private def updateSignals(): Unit = {
+    val (logic, wire, register) = ("logic", "wire", "register")
+
+    signals.foreach {
+      case (_, (_, _, _, typ, sigNames)) =>
+        typ.name match {
+          case "logic" | "wire" | "register" => ()
+          case scope => // The scope to update
+            val newNames = sigNames.names // This contains the verilog signal names withing the scope
+
+            // Find all the signals that are within the scope to be updated
+            signals.filter(_._2._1.scope == scope)
+              .zip(newNames).map {
+                case ((elId, (name, dir, hwType, typ, _)), newSigName) =>
+                  (elId, (name, dir, hwType, typ, VerilogSignals(Seq(newSigName))))
+              }.foreach(kv => signals.update(kv._1, kv._2))
+
+        }
+    }
+    nameUpdate = true
+
   }
 
   /**
@@ -143,13 +197,15 @@ class DebugIRParser {
       case Some(sigName) => names = names :+ sigName
       case None          => ()
     }
-    value.operands match {
-      case Some(operands) =>
-        operands.foreach { op =>
-          names = names ++ collectSigNames(op)
-        }
-      case None => ()
-    }
+
+    if (value.opcode.getOrElse("") == "'{")
+      value.operands match {
+        case Some(operands) =>
+          operands.foreach { op =>
+            names = names ++ collectSigNames(op)
+          }
+        case None => ()
+      }
     names
   }
 

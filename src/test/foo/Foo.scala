@@ -15,7 +15,7 @@ class Bar extends Module {
     val b   = Input(Bool())
     val out = Output(Bool())
   })
-
+  
   io.out := io.a & io.b
 }
 

@@ -43,3 +43,13 @@ class FooTest extends AnyFlatSpec {
   }
 
 }
+
+class SimpleTest extends AnyFlatSpec {
+  behavior of "SimpleTest"
+  it should "trace simple bar" in {
+    simulate(new Bar, Seq(simSettings.EnableTraceWithUnderscore), simName = "trace_simple_bar") { c =>
+      c.io.a.poke(true)
+      c.io.b.poke(false)
+    }
+  }
+}
