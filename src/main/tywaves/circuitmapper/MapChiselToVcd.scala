@@ -79,7 +79,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
    */
   def mapCircuits(): Unit = {
 
-    def joinAndDump[K, V1, V2](
+    def joinAndDump[K, V1, V2](name1: String, name2: String)(
         map1: UniqueHashMap[K, V1],
         map2: UniqueHashMap[K, V2],
     )(dumpfile: String, append: Boolean = true): Unit = {
@@ -91,10 +91,10 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
       val bw = new java.io.BufferedWriter(new java.io.FileWriter(dumpfile, append))
       join.foreach {
-        case (elId, (firrtlIR, chiselIR)) =>
+        case (elId, (first, second)) =>
           bw.write(s"elId: $elId\n" +
-            s"\tchiselIR: $chiselIR\n" +
-            s"\tfirrtlIR: $firrtlIR\n")
+            s"\t$name1: $first\n" +
+            s"\t$name2: $second\n")
       }
       bw.close()
     }
@@ -105,22 +105,27 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         println(s"firrtlElId: $firrtlElId, firrtlName: $firrtlName")
         println(s"chiselElId: $chiselElId, chiselName: $chiselName")
     }
-    println("Joined Modules:")
-    joinAndDump(firrtlIRParser.modules, chiselIRParser.modules)(s"$logSubDir/JoinedModules.log")
-    println("\n-----------------------------")
-
-    println("Joined Ports FirrtlIR:")
-    joinAndDump(firrtlIRParser.ports, chiselIRParser.ports)(s"$logSubDir/JoinedPorts.log")
-
-    println("\n-----------------------------")
-
-    println("Joined Flattened Ports FirrtlIR:")
-    joinAndDump(firrtlIRParser.flattenedPorts, chiselIRParser.flattenedPorts)(s"$logSubDir/JoinedFlattenedPorts.log")
-
-    println("\n-----------------------------")
-
-    println("Joined All Elements FirrtlIR:")
-    joinAndDump(firrtlIRParser.allElements, chiselIRParser.allElements)(s"$logSubDir/JoinedAllElements.log")
+    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.modules, chiselIRParser.modules)(s"$logSubDir/JoinedModules.log")
+    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.ports, chiselIRParser.ports)(s"$logSubDir/JoinedPorts.log")
+    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.flattenedPorts, chiselIRParser.flattenedPorts)(
+      s"$logSubDir/JoinedFlattenedPorts.log"
+    )
+    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.allElements, chiselIRParser.allElements)(
+      s"$logSubDir/JoinedAllElements.log"
+    )
+    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.modules, firrtlIRParser.modules)(
+      s"$logSubDir/JoinedModules.debug.log"
+    )
+    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.ports, firrtlIRParser.ports)(s"$logSubDir/JoinedPorts.debug.log")
+    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.flattenedPorts, firrtlIRParser.flattenedPorts)(
+      s"$logSubDir/JoinedFlattenedPorts.debug.log"
+    )
+    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.allElements, firrtlIRParser.allElements)(
+      s"$logSubDir/JoinedAllElements.debug.log"
+    )
+    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.signals, firrtlIRParser.allElements)(
+      s"$logSubDir/JoinedSignals.debug.log"
+    )
 
   }
 }

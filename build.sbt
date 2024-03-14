@@ -14,7 +14,7 @@ ThisBuild / scalaVersion := "2.13.10"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "TyWaves-samples: ChiselSim elaboration study",
+    name := "TyWaves-demo: backend Chisel-to-Vcd mapper",
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
@@ -23,7 +23,6 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.circe"          %% "circe-core"    % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-generic" % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-parser"  % circeVersion,
-
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",

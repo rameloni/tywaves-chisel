@@ -8,6 +8,10 @@ class UniqueHashMap[K, V] extends mutable.HashMap[K, V] {
   private val _debugList = new mutable.ListBuffer[(K, V)]()
   private val debugList  = new mutable.ListBuffer[(K, V, Int)]()
 
+  /** Same implementation of [[mutable.HashMap.put]] */
+  def putOrReplace(key: K, value: V): Option[V] =
+    super.put(key, value)
+
   override def put(key: K, value: V): Option[V] = {
     if (super.contains(key)) {
       this.foreach(Console.err.println(_))

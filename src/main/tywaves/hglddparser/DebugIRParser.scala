@@ -12,6 +12,8 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
   def this() = this("workingDir", "ddFilePath")
 
+  val hierarchySeparator = "_"
+
   lazy val modules        = new UniqueHashMap[ElId, Name]()
   lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, chiselIR.Port*/ )]()
   lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
@@ -60,13 +62,10 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
   }
 
   /**
-   * Parse a given file in `hgldd` format.
-   * @param workingDir
-   *   the working directory used to resolve properties in the hgldd file (i.e.
-   *   the `hdl_file` specified in [[hglddparser.HglddHeader.file_info]]) and to
-   *   output working files of the parser
-   * @param ddFilePath
-   *   the input file to parse
+   * Parse the file in `hgldd` format in [[ddFilePath]] and fill [[modules]],
+   * [[ports]], [[flattenedPorts]], [[allElements]], and [[signals]].
+   *
+   * It also updates the [[signals]] with the actual system verilog name.
    */
   def parse(): Unit = {
     val hgldd = parseFile(ddFilePath)
@@ -78,7 +77,9 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
     hgldd.objects.foreach(
       parseObject(
-        fileInfo.map(f => f.replaceAll("\\.\\./", "")), // Use the same of the other parsers TODO: needs better version
+        fileInfo.map(f =>
+          f.replaceAll("\\.\\./", "")
+        ), // Use the same of the other parsers (ChiselIR and FIRRTL IR) TODO: needs better version
         _,
       )
     )
@@ -88,8 +89,6 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
   /** Parse an object from the HGLDD representation */
   private def parseObject(fileInfo: Seq[String], hglddObject: HglddObject): Unit = {
-    // Step 1: Create the ElId
-//    val elId = createId(fileInfo, hglddObject.hgl_loc, hglddObject.obj_name)
 
     val scope =
       hglddObject.obj_name.lastIndexOf("_") match { case -1 => "root"; case i => hglddObject.obj_name.substring(0, i) }
@@ -99,7 +98,7 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
     val elId =
       createId(fileInfo, hglddObject.hgl_loc, obj_name)
 
-    // Step 2: Parse the kind of the object
+    // Parse the kind of the object
     hglddObject.kind match {
       case s @ "struct" =>
         allElements.put(elId, (Name(obj_name, scope), Direction("Unknown"), Type(s)))
@@ -161,30 +160,29 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
    *   1. From [[signals]] search those signals within the `scope` and update
    *      with their new name.
    */
-//  Find all the elements that are not logic, wire, or register
-  // if a signal is not a logic, wire, or register, it has a complex type,
-  // find and update the name of that signals
   private def updateSignals(): Unit = {
     val (logic, wire, register) = ("logic", "wire", "register")
-
-    signals.foreach {
-      case (_, (_, _, _, typ, sigNames)) =>
-        typ.name match {
-          case "logic" | "wire" | "register" => ()
-          case scope => // The scope to update
-            val newNames = sigNames.names // This contains the verilog signal names withing the scope
-
-            // Find all the signals that are within the scope to be updated
-            signals.filter(_._2._1.scope == scope)
-              .zip(newNames).map {
-                case ((elId, (name, dir, hwType, typ, _)), newSigName) =>
-                  (elId, (name, dir, hwType, typ, VerilogSignals(Seq(newSigName))))
-              }.foreach(kv => signals.update(kv._1, kv._2))
-
-        }
-    }
+    // Get all the types and their sig_names: type = scope, sig_names = new names for the children of the scope
+    signals.map { case (elId, (name, _, _, typ, sigNames)) => (typ.name, sigNames.names, name.name, elId) }
+      .filter(typ => typ._1 != logic && typ._1 != wire && typ._1 != register) // Filter the complex types
+      .foreach {
+        case (scope, newNames, parentName, parentElId) =>
+          // Find all the signals that are within the scope to be updated
+          signals.filter { case (_, (name, _, _, _, _)) => name.scope == scope }
+            .zip(newNames).foreach { // Update the signals with the new names (the sig_names is overwritten)
+              case ((_elId, (name, dir, hwType, typ, _)), _newSigName) =>
+                val newSigName = parentName + hierarchySeparator + name.name
+                val elId       = ElId(parentElId.source, parentElId.row, parentElId.col, _elId.name)
+                // Now the sig_names contains verilog names
+                signals.putOrReplace(elId, (name, dir, hwType, typ, VerilogSignals(Seq(newSigName)))) match {
+                  case None => // It is a new value, that means the something changed
+                    Console.err.println(s"Info: The signal $elId was not found in the signals list.")
+                    Console.err.println("Removed: " + signals.remove(_elId)) // Remove the old value
+                  case Some(_) => ()
+                }
+            }
+      } // end foreach
     nameUpdate = true
-
   }
 
   /**
