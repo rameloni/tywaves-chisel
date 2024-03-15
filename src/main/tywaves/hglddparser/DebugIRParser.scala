@@ -2,12 +2,11 @@ package tywaves.hglddparser
 
 import chisel3.RawModule
 import io.circe.generic.auto._
-import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type}
+import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type, VerilogSignals}
 import tywaves.hglddparser
 import tywaves.utils.UniqueHashMap
 
 import scala.io.Source
-case class VerilogSignals(names: Seq[String])
 class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
   def this() = this("workingDir", "ddFilePath")

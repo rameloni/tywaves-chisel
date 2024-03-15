@@ -72,29 +72,40 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
    * This method is used to map the Chisel IR to the VCD file. It tries to
    * associate each element of Chisel IR with Firrtl IR. If an element of the
    * next IR is not found a None is returned for the missing IR. Thus the output
-   * will be something similar to:
+   * will be something similar to:Seq
    *   - `(Some(..), Some(..))`
    *   - `(Some(..), None)`
    *   - `(None, Some(..))`
    */
   def mapCircuits(): Unit = {
 
-    def joinAndDump[K, V1, V2](name1: String, name2: String)(
-        map1: UniqueHashMap[K, V1],
-        map2: UniqueHashMap[K, V2],
-    )(dumpfile: String, append: Boolean = true): Unit = {
-//      val join = map1.keySet.intersect(map2.keySet)
-      val join = map1.keySet.union(map2.keySet)
+    // Your processing logic here
+    def joinAndDump[K](listMaps: Seq[(String, UniqueHashMap[K, ?])])(dumpFile: String): Unit = {
+
+      val join = listMaps.map(_._2.keySet).reduce(_ union _)
         .map { key =>
-          (key, (map1.get(key), map2.get(key)))
+          (key, listMaps.map { case (name, map) => (name, map.get(key)) })
         }.toMap
 
-      val bw = new java.io.BufferedWriter(new java.io.FileWriter(dumpfile, append))
+      println(join)
+
+      val bw = new java.io.BufferedWriter(new java.io.FileWriter(dumpFile))
       join.foreach {
-        case (elId, (first, second)) =>
-          bw.write(s"elId: $elId\n" +
-            s"\t$name1: $first\n" +
-            s"\t$name2: $second\n")
+        case (elId, list) =>
+          bw.write(s"elId: $elId\n")
+          list.foreach {
+            case (name, Some(value)) =>
+              bw.write(s"\t$name: $value\n")
+
+              // Check if value is the one with SystemVerilog names
+              value match {
+                case (Name(_, _), Direction(_), HardwareType(_), Type(_), VerilogSignals(names)) =>
+                  bw.write(s"\t\"SystemVerilogNames and (maybe) VCD\": ${ujson.write(names)}\n")
+                case _ =>
+              }
+            case (name, None) =>
+              bw.write(s"\t$name: None\n")
+          }
       }
       bw.close()
     }
@@ -105,27 +116,36 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         println(s"firrtlElId: $firrtlElId, firrtlName: $firrtlName")
         println(s"chiselElId: $chiselElId, chiselName: $chiselName")
     }
-    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.modules, chiselIRParser.modules)(s"$logSubDir/JoinedModules.log")
-    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.ports, chiselIRParser.ports)(s"$logSubDir/JoinedPorts.log")
-    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.flattenedPorts, chiselIRParser.flattenedPorts)(
-      s"$logSubDir/JoinedFlattenedPorts.log"
-    )
-    joinAndDump("firrtlIR", "chiselIR")(firrtlIRParser.allElements, chiselIRParser.allElements)(
-      s"$logSubDir/JoinedAllElements.log"
-    )
-    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.modules, firrtlIRParser.modules)(
-      s"$logSubDir/JoinedModules.debug.log"
-    )
-    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.ports, firrtlIRParser.ports)(s"$logSubDir/JoinedPorts.debug.log")
-    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.flattenedPorts, firrtlIRParser.flattenedPorts)(
-      s"$logSubDir/JoinedFlattenedPorts.debug.log"
-    )
-    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.allElements, firrtlIRParser.allElements)(
-      s"$logSubDir/JoinedAllElements.debug.log"
-    )
-    joinAndDump("debugIR", "firrtlIR")(gDebugIRParser.signals, firrtlIRParser.allElements)(
-      s"$logSubDir/JoinedSignals.debug.log"
-    )
+
+    joinAndDump(Seq(
+      ("chiselIR", chiselIRParser.modules),
+      ("firrtlIR", firrtlIRParser.modules),
+      ("debugIR", gDebugIRParser.modules),
+    ))(s"$logSubDir/JoinedModules.log")
+
+    joinAndDump(Seq(
+      ("chiselIR", chiselIRParser.ports),
+      ("firrtlIR", firrtlIRParser.ports),
+      ("debugIR", gDebugIRParser.ports),
+    ))(s"$logSubDir/JoinedPorts.log")
+
+    joinAndDump(Seq(
+      ("chiselIR", chiselIRParser.flattenedPorts),
+      ("firrtlIR", firrtlIRParser.flattenedPorts),
+      ("debugIR", gDebugIRParser.flattenedPorts),
+    ))(s"$logSubDir/JoinedFlattenedPorts.log")
+
+    joinAndDump(Seq(
+      ("chiselIR", chiselIRParser.allElements),
+      ("firrtlIR", firrtlIRParser.allElements),
+      ("debugIR", gDebugIRParser.allElements),
+    ))(s"$logSubDir/JoinedAllElements.log")
+
+    joinAndDump(Seq(
+      ("chiselIR", chiselIRParser.allElements),
+      ("firrtlIR", firrtlIRParser.allElements),
+      ("debugIR", gDebugIRParser.signals),
+    ))(s"$logSubDir/JoinedSignals.log")
 
   }
 }
