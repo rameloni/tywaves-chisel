@@ -73,9 +73,14 @@ private object TypedConverter {
 }
 
 object GenerateHgldd {
+
+  /**
+   * It generates runs the mapper Chisel to Vcd and returns the directory where
+   * the HGLDD is dumped.
+   */
   def apply[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): String = {
     val mapChiselToVcd = new MapChiselToVcd(generateModule, workingDir)
     mapChiselToVcd.dumpLog()
-    mapChiselToVcd.logSubDir
+    TypedConverter.getDebugIRFile(gOpt = true)
   }
 }

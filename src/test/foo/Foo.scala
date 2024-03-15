@@ -15,8 +15,9 @@ class Bar extends Module {
     val b   = Input(Bool())
     val out = Output(Bool())
   })
-  
-  io.out := io.a & io.b
+  val wire = Wire(Bool())
+  wire   := io.a & io.b
+  io.out := wire
 }
 
 class Simple extends Bundle

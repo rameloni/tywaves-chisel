@@ -1,7 +1,8 @@
 package tywaves.simulator
 
 import chisel3.RawModule
-import chisel3.simulator.{PeekPokeAPI, SingleBackendSimulator}
+import chisel3.simulator.withargs.SingleBackendSimulatorWithArgs
+import chisel3.simulator.PeekPokeAPI
 import svsim._
 import tywaves.circuitmapper.MapChiselToVcd
 
@@ -84,10 +85,15 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
     }
 
   // Simulators: DefaultSimulators
-  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
-    val backend                            = verilator.Backend.initializeFromProcessEnvironment()
-    val tag                                = "default"
-    val commonCompilationSettings          = CommonCompilationSettings()
+  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulatorWithArgs[verilator.Backend] {
+    val backend = verilator.Backend.initializeFromProcessEnvironment()
+    val tag     = "default"
+    val commonCompilationSettings = CommonCompilationSettings(
+      optimizationStyle = CommonCompilationSettings.OptimizationStyle.OptimizeForCompilationSpeed,
+      availableParallelism = CommonCompilationSettings.AvailableParallelism.UpTo(4),
+      defaultTimescale = Some(CommonCompilationSettings.Timescale.FromString("1ms/1ms")),
+    )
+    val firtoolArgs: Seq[String] = Seq("-g", "--emit-hgldd")
     val backendSpecificCompilationSettings = _backendCompileSettings
 
     println("Backend specific compilation settings: " + backendSpecificCompilationSettings)
@@ -102,9 +108,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       os.move(tmpDir, workDir, replaceExisting = true, createFolders = true, atomicMove = true)
       println(s"Moving $tmpDir to $workDir")
     }
-    //    sys.addShutdownHook {
-    //        cleanup()
-    //    }
+
   }
 
   private lazy val simulator: DefaultSimulator = {
