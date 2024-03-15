@@ -10,11 +10,13 @@ object Defaults {
   lazy val typ    = Type("")
 }
 
+// TODO: Redefine the ElId in a more meaningful way
 case class ElId(
     source: String,
     row:    Int,
     col:    Int,
-    name:   String = "",// Optionally the name of the element
+    name:   String = "", // Optionally the name of the element
+//    scope:  String, // TODO: Add scope to the ElId
 //    implicitEl: Option[String] = None, /* This allows to handle special elements, automatically set */
 ) extends Ordered[ElId] {
 

@@ -23,6 +23,10 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.circe"          %% "circe-core"    % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-generic" % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-parser"  % circeVersion,
+
+    //    libraryDependencies += "nl.tudelft" %% "root" % "0.1.0",
+    libraryDependencies += "edu.berkeley.cs" %% "chiseltest"  % "6.0.0",
+    libraryDependencies += "nl.tudelft"      %% "tydi-chisel" % "0.1.6",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
