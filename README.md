@@ -1,1 +1,2 @@
-#Tywaves demo project
+# Tywaves demo projec: Chisel backend
+Demo backend of the Tywaves project. This repo contains function that parse the information a Chisel circuit, debug info emitted by the firtool compiler, simulate a circuit using ChiselSim and combine all the information to the [surfer-tywaves-demo](https://gitlab.com/rameloni/surfer-tywaves-demo) frontend (an extension of the Surfer waveform viewer written in Rust to support Chisel).
