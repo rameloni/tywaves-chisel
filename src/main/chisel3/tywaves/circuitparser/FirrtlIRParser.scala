@@ -29,14 +29,14 @@ class FirrtlIRParser
     val (name, info) = (firrtlModule.name, firrtlModule.info)
     val elId         = this.createId(info)
 
-    modules.put(elId, (Name(name, "root"), firrtlModule)) // Add the module and its name
+    modules.put(elId, (Name(name, "root", "root"), firrtlModule)) // Add the module and its name
 
     // Parse the internals of the module
     firrtlModule match {
-      case firrtlIR.Module(_, _, ports, body) =>
-        ports.foreach(parsePort(name, _))
+      case firrtlIR.Module(_, moduleName, ports, body) =>
+        ports.foreach(parsePort(name, _, moduleName))
         // TODO: Parse the body:
-        parseBodyStatement(name, body)
+        parseBodyStatement(name, body, moduleName)
       case firrtlIR.ExtModule(_, name, ports, defname, params) =>
         println(s"ExtModule: name: $name, ports: $ports, defname: $defname, params: $params")
 
@@ -45,22 +45,30 @@ class FirrtlIRParser
   }
 
   /** Parse a [[firrtlIR.Port]] */
-  override def parsePort(scope: String, port: firrtlIR.Port): Unit = {
+  override def parsePort(scope: String, port: firrtlIR.Port, parentModule: String): Unit = {
     // Parse generic info and create an ID for the port
     val (name, info, dir, firrtlType) = (port.name, port.info, port.direction, port.tpe)
     val elId                          = this.createId(info, Some(name))
 
     ports.put(
       elId,
-      (Name(name, scope), Direction(dir.toString), Type(firrtlType.getClass.getSimpleName) /*, port*/ ),
+      (Name(name, scope, parentModule), Direction(dir.toString), Type(firrtlType.getClass.getSimpleName) /*, port*/ ),
     ) // Add the port and its name
 
     // Parse the type to build flattened ports
     firrtlType match {
       case agg: firrtlIR.AggregateType =>
         println(s"AggregateType: $agg")
-        parseAggregate(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
-      case _ => parseElement(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), firrtlType)
+        parseAggregate(
+          elId,
+          Name(name, scope, parentModule),
+          Direction(dir.toString),
+          HardwareType("Port"),
+          agg,
+          parentModule,
+        )
+      case _ =>
+        parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), firrtlType, parentModule)
     }
   }
 
@@ -71,24 +79,25 @@ class FirrtlIRParser
    * types.
    */
   override def parseAggregate(
-      elId:     ElId,
-      name:     Name,
-      dir:      Direction,
-      hwType:   HardwareType,
-      aggrType: firrtlIR.AggregateType,
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      aggrType:     firrtlIR.AggregateType,
+      parentModule: String,
   ): Unit = {
-    super.parseAggregate(elId, name, dir, hwType, aggrType)
+    super.parseAggregate(elId, name, dir, hwType, aggrType, parentModule)
 
     aggrType match {
       case firrtlIR.BundleType(fields) =>
         fields.foreach { case firrtlIR.Field(fieldName, _, tpe) =>
-          parseElement(elId, Name(fieldName, name.name), dir, hwType, tpe)
+          parseElement(elId, Name(fieldName, name.name, parentModule), dir, hwType, tpe, parentModule)
         }
       case firrtlIR.VectorType(tpe, size) =>
         for (i <- 0 until size) {
           //          flattenedPorts.put(elId.addName(name.name + "[" + i + "]"), (name, dir, hwType, Type(tpe.toString)))
           //          internalElements.put(elId.addName(name.name + "[" + i + "]"), (name, dir, Type(tpe.toString)))
-          parseElement(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, tpe)
+          parseElement(elId, Name(name.name + "[" + i + "]", name.scope, parentModule), dir, hwType, tpe, parentModule)
         }
       //        ??? // TODO: Implement
     }
@@ -100,16 +109,17 @@ class FirrtlIRParser
    * This function handles special cases of aggregate types.
    */
   override def parseElement(
-      elId:       ElId,
-      name:       Name,
-      dir:        Direction,
-      hwType:     HardwareType,
-      firrtlType: firrtlIR.Type,
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      firrtlType:   firrtlIR.Type,
+      parentModule: String
   ): Unit = {
     import firrtlIR._
     firrtlType match {
-      case aggr: BundleType => parseAggregate(elId, name, dir, hwType, aggr)
-      case aggr: VectorType => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
+      case aggr: BundleType => parseAggregate(elId, name, dir, hwType, aggr, parentModule)
+      case aggr: VectorType => parseAggregate(elId, name, dir, hwType, aggr, parentModule) // TODO: Implement
       case ClockType | AsyncResetType | ResetType |
           UIntType(_) | SIntType(_) | AnalogType(_) =>
         if (hwType == HardwareType("Port"))
@@ -120,17 +130,17 @@ class FirrtlIRParser
   }
 
   /** Parse a [[firrtlIR.Statement]] */
-  def parseBodyStatement(scope: String, body: firrtlIR.Statement): Unit = {
+  def parseBodyStatement(scope: String, body: firrtlIR.Statement, parentModule: String): Unit = {
     import firrtlIR._
     body match {
-      case Block(stmts)             => stmts.foreach(parseBodyStatement(scope, _))
+      case Block(stmts)             => stmts.foreach(parseBodyStatement(scope, _, parentModule))
       case DefWire(info, name, tpe) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope), Direction("no dir"), HardwareType("Wire"), tpe)
+        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Wire"), tpe, parentModule)
 
       case DefRegisterWithReset(info, name, tpe, _, _, _) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope), Direction("no dir"), HardwareType("Register"), tpe)
+        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Register"), tpe, parentModule)
 
       case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")

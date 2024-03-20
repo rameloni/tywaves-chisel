@@ -55,6 +55,8 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
     val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)
     mapChiselToVcd.dumpLog()
     mapChiselToVcd.mapCircuits()
+    mapChiselToVcd.createTywavesState()
+
   }
 
   /**

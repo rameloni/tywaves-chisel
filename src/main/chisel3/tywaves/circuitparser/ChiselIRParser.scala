@@ -4,7 +4,7 @@ import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine}
 import chisel3.internal.firrtl.{ir => chiselIR}
 import chisel3.{Aggregate, Bundle, Data, Vec}
 import tywaves.utils.UniqueHashMap
-import tywaves.circuitmapper.{ElId, Name, Direction, Type, HardwareType}
+import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type, tywaves_symbol_table}
 
 class ChiselIRParser
     extends CircuitParser[chiselIR.Circuit, chiselIR.Component, chiselIR.Port, Aggregate, Data, chiselIR.Command] {
@@ -13,6 +13,9 @@ class ChiselIRParser
   override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, chiselIR.Port*/ )]()
   override lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
   override lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
+
+  private var _tywavesState = tywaves_symbol_table.TywaveState(Seq.empty)
+  def tywaveState: tywaves_symbol_table.TywaveState = _tywavesState
 
   /** Parse a whole [[chiselIR.Circuit]] */
   override def parseCircuit(circuitChiselIR: chiselIR.Circuit): Unit =
@@ -24,14 +27,16 @@ class ChiselIRParser
     val name = chiselComponent.name
     val elId = this.createId(SourceLine(name, 0, 0), Some(name))
 
-    modules.put(elId, (Name(name, "root"), chiselComponent)) // Add the module and its name
+    modules.put(elId, (Name(name, "root", "root"), chiselComponent)) // Add the module and its name
+    _tywavesState.scopes = _tywavesState.scopes :+
+      tywaves_symbol_table.Scope(name, Seq.empty, Seq.empty)
 
     // Parse the internals of the module
     chiselComponent match {
-      case chiselIR.DefModule(_, _, ports, body) =>
-        ports.foreach(parsePort(name, _))
+      case chiselIR.DefModule(_, moduleName, ports, body) =>
+        ports.foreach(parsePort(name, _, moduleName))
         // TODO: Parse the body:
-        body.foreach(parseBodyStatement(name, _))
+        body.foreach(parseBodyStatement(name, _, moduleName))
       case chiselIR.DefBlackBox(_, name, ports, topDir, params) =>
         println(s"DefBlackBox: name: $name, ports: $ports, topDir: $topDir, params: $params")
 
@@ -51,7 +56,7 @@ class ChiselIRParser
    *     })
    * }}}
    */
-  override def parsePort(scope: String, port: chiselIR.Port): Unit = {
+  override def parsePort(scope: String, port: chiselIR.Port, parentModule: String): Unit = {
     val portData: Data = port.id
 
     // Parse generic info and create an ID for the port
@@ -60,7 +65,7 @@ class ChiselIRParser
 
     ports.put(
       elId,
-      (Name(name, scope), Direction(dir.toString), Type(portData.typeName) /*, port*/ ),// Fixme: type name
+      (Name(name, scope, parentModule), Direction(dir.toString), Type(portData.typeName) /*, port*/ ),// Fixme: type name
     )                                                                                   // Add the port and its name
 
     // Types from here: https://github.com/chipsalliance/chisel?tab=readme-ov-file#data-types-overview
@@ -68,8 +73,8 @@ class ChiselIRParser
       case agg: Aggregate =>
         // TODO: check this
         println(s"AggregateType: $agg")
-        parseAggregate(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), agg)
-      case _ => parseElement(elId, Name(name, scope), Direction(dir.toString), HardwareType("Port"), portData)
+        parseAggregate(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), agg, parentModule)
+      case _ => parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), portData, parentModule)
     }
   }
 
@@ -88,19 +93,29 @@ class ChiselIRParser
       dir:      Direction,
       hwType:   HardwareType,
       aggrType: Aggregate,
+      parentModule: String
   ): Unit = {
 
-    super.parseAggregate(elId, name, dir, hwType, aggrType)
+    super.parseAggregate(elId, name, dir, hwType, aggrType, parentModule)
 
     aggrType match {
       case b: Bundle =>
         b.elements.foreach { case (fieldName, dataType) =>
-          parseElement(elId, Name(fieldName, name.name), dir, hwType, dataType)
+          parseElement(elId, Name(fieldName, name.name, parentModule), dir, hwType, dataType, parentModule)
           println(s"AggregateType: $aggrType, dir: $dir, hwType: $hwType, name: $name")
+
+          val variable = tywaves_symbol_table.Variable(
+            name.name,
+            dataType.typeName,
+            tywaves_symbol_table.hwtype.from_string(hwType.name, Some(dir.name)),
+            tywaves_symbol_table.realtype.Bundle(Seq.empty, None),
+          )
+          _tywavesState.scopes = _tywavesState.scopes :+
+            tywaves_symbol_table.Scope(fieldName, Seq.empty, Seq.empty)
         }
       case v: Vec[Data] =>
         for (i <- 0 until v.length) {
-          parseElement(elId, Name(name.name + "[" + i + "]", name.scope), dir, hwType, v(i))
+          parseElement(elId, Name(name.name + "[" + i + "]", name.scope, parentModule), dir, hwType, v(i), parentModule)
         }
 
     }
@@ -112,10 +127,10 @@ class ChiselIRParser
    *
    * This function handles special cases of aggregate types.
    */
-  def parseElement(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, dataType: Data): Unit =
+  def parseElement(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, dataType: Data, parentModule: String): Unit =
     dataType match {
-      case aggr: Bundle    => parseAggregate(elId, name, dir, hwType, aggr)
-      case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr) // TODO: Implement
+      case aggr: Bundle    => parseAggregate(elId, name, dir, hwType, aggr, parentModule)
+      case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr, parentModule) // TODO: Implement
       case _ =>
         // TODO: other cases need to be implemented. For now, simply add the element to the map
         if (hwType == HardwareType("Port"))
@@ -126,7 +141,7 @@ class ChiselIRParser
   //  ??? // TODO: Implement for Data types
 
   /** Parse a [[chiselIR.Command]]. In FIRRTL, commands are Statements */
-  override def parseBodyStatement(scope: String, body: chiselIR.Command): Unit = {
+  override def parseBodyStatement(scope: String, body: chiselIR.Command, parentModule: String): Unit = {
     val parseRes = body match {
       case chiselIR.DefWire(sourceInfo, dataType)             => Some((sourceInfo, dataType, HardwareType("Wire")))
       case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register")))
@@ -146,10 +161,11 @@ class ChiselIRParser
       case Some((sourceInfo, dataType, hwType)) =>
         parseElement(
           createId(sourceInfo),
-          Name(dataType.toNamed.name, scope),
+          Name(dataType.toNamed.name, scope, parentModule),
           Direction(dataType.direction.toString),
           hwType,
           dataType,
+          parentModule
         )
       case None => // Skip
     }

@@ -12,15 +12,15 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
 
   def parseCircuit(circuit: T): Unit
   def parseModule(module:   ModuleT): Unit
-  def parsePort(scope:      String, port: PortT): Unit
-  def parseAggregate(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, agg: AggregateT): Unit = {
+  def parsePort(scope:      String, port: PortT, parentModule: String): Unit
+  def parseAggregate(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, agg: AggregateT, parentModule: String): Unit = {
     if (hwType == HardwareType("Port"))
-      flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(agg.getClass.getName)))
-    allElements.put(elId.addName(name.name), (name, dir, Type(agg.getClass.getName)))
+      flattenedPorts.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, hwType, Type(agg.getClass.getName)))
+    allElements.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, Type(agg.getClass.getName)))
   }
 
-  def parseElement(elId:        ElId, name:   Name, dir: Direction, hwType: HardwareType, element: ElementT): Unit
-  def parseBodyStatement(scope: String, body: BodyStatementT): Unit
+  def parseElement(elId:        ElId, name:   Name, dir: Direction, hwType: HardwareType, element: ElementT, parentModule: String): Unit
+  def parseBodyStatement(scope: String, body: BodyStatementT, parentModule: String): Unit
 
   def dumpMaps(fileDump: String): Unit = {
     modules.dumpFile(fileDump, "Modules:", append = false)

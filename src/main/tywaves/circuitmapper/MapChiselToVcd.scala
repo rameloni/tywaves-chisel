@@ -4,6 +4,8 @@ import chisel3.RawModule
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
 import firrtl.stage.FirrtlCircuitAnnotation
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveEncoder
 import tywaves.hglddparser.DebugIRParser
 import tywaves.utils.UniqueHashMap
 
@@ -68,6 +70,12 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     debugIRParser.dump(s"$logSubDir/DebugIRParser.log")
   }
 
+  def joinMapCircuits[K](listMaps: Seq[(String, UniqueHashMap[K, ?])]): Map[K, Seq[(String, Option[?])]] =
+    listMaps.map(_._2.keySet).reduce(_ union _)
+      .map { key =>
+        (key, listMaps.map { case (name, map) => (name, map.get(key)) })
+      }.toMap
+
   /**
    * This method is used to map the Chisel IR to the VCD file. It tries to
    * associate each element of Chisel IR with Firrtl IR. If an element of the
@@ -99,7 +107,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
               // Check if value is the one with SystemVerilog names
               value match {
-                case (Name(_, _), Direction(_), HardwareType(_), Type(_), VerilogSignals(names)) =>
+                case (Name(_, _, _), Direction(_), HardwareType(_), Type(_), VerilogSignals(names)) =>
                   bw.write(s"\t\"SystemVerilogNames and (maybe) VCD\": ${ujson.write(names)}\n")
                 case _ =>
               }
@@ -148,4 +156,178 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     ))(s"$logSubDir/JoinedSignals.log")
 
   }
+
+  def createTywavesState(): Unit = {
+    import io.circe.generic.auto._
+    import io.circe.syntax._
+    import java.io.PrintWriter
+
+//    val tywaveState = chiselIRParser.tywaveState.asJson
+//    // Circe to output json
+//    println(tywaveState)
+//    val printWriter = new PrintWriter(s"$logSubDir/tywavesState.json")
+//    printWriter.write(tywaveState.spaces2) // Use spaces2 to format the JSON with indentation
+//    printWriter.close()
+
+    import tywaves_symbol_table._
+
+    val groupIrPerElement: Map[ElId, Seq[(String, Option[?])]] = joinMapCircuits(
+      Seq(
+        ("chiselIR", chiselIRParser.allElements),
+        ("firrtlIR", firrtlIRParser.allElements),
+        ("debugIR", gDebugIRParser.signals),
+      )
+    )
+
+    // Each element is associated to the 3 IRs
+    // The goal here is to create a Tywavestate
+    var scopes = Seq.empty[Scope]
+    groupIrPerElement.foreach {
+      case (elId, irs) =>
+        println()
+        println("ElId: " + elId)
+        println("Found elements: " + irs.size)
+        irs.foreach {
+          case (ir, Some(value)) =>
+            println(s"IR: $ir", value)
+            val scope =
+              tywaves_symbol_table.Scope(
+                findTywaveScope(value),
+                findChildVariables(
+                  value,
+                  ir,
+                  gDebugIRParser.signals.values.toSeq,
+                  chiselIRParser.allElements.values.toSeq,
+                ),
+                findChildScopes(value),
+              )
+            scopes = scopes :+ scope
+            println(scope)
+          case (ir, None) => println(s"IR: $ir", None)
+        }
+    }
+
+    val tywaveState = tywaves_symbol_table.TywaveState(mergeScopes(scopes)).asJson
+    val printWriter = new PrintWriter(s"$logSubDir/tywavesState.json")
+    printWriter.write(tywaveState.spaces2) // Use spaces2 to format the JSON with indentation
+    printWriter.close()
+
+  }
+
+  def mergeScopes(scopes: Seq[tywaves_symbol_table.Scope]): Seq[tywaves_symbol_table.Scope] = {
+    // Join all the scopes with the same names
+    val groupScopes = scopes.groupBy(_.name)
+
+    groupScopes.map(
+      _._2.reduce((a, b) =>
+        tywaves_symbol_table.Scope(
+          a.name,
+          a.childVariables ++ b.childVariables,
+          a.childScopes ++ b.childScopes,
+        )
+      )
+    ).toSeq
+
+  }
+
+  // Tywave scope of a variable is the parent module name
+  private def findTywaveScope[Tuple](tuple: Tuple): String =
+    tuple match {
+      case (Name(_, _, tywaveScope), Direction(_), HardwareType(_), Type(_), VerilogSignals(_)) => tywaveScope
+      case (Name(_, _, tywaveScope), Direction(_), Type(_))                                     => tywaveScope
+      case other =>
+        throw new NotImplementedError("This branch shouldn't be reached.")
+    }
+
+  private def findChildVariables[Tuple](
+      tuple:          Tuple,
+      ir:             String,
+      listVcdInfo:    Seq[Tuple],
+      listChiselInfo: Seq[Tuple],
+  ): Seq[tywaves_symbol_table.Variable] = {
+    var childVariables = Seq.empty[tywaves_symbol_table.Variable]
+    if (ir == "debugIR")
+      tuple match {
+        case (
+              Name(name, _, tywaveScope),
+              Direction(dir),
+              HardwareType(hardwareType),
+              Type(typeName),
+              VerilogSignals(verilogSignals),
+            ) =>
+          if (verilogSignals.length <= 1) {
+            println(s"-----------> $hardwareType <---------")
+            childVariables = childVariables :+ tywaves_symbol_table.Variable(
+              name,
+              typeName,
+              tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
+              realType = tywaves_symbol_table.realtype.Ground(1, verilogSignals.head),
+            )
+          } else {
+            println(s"---------> $name")
+            val listChildren = listVcdInfo.filter {
+              case (
+                    Name(_, scope, _),
+                    Direction(_),
+                    HardwareType(_),
+                    Type(_),
+                    VerilogSignals(_),
+                  ) =>
+                val nameWithScope = tywaveScope + "_" + name
+                if (scope == nameWithScope) true else false
+              case _ => false
+            }
+            val listChildrenChisel = listChiselInfo.filter {
+              case (
+                    Name(_, scope, _),
+                    Direction(_),
+                    Type(_),
+                  ) =>
+                val nameWithScope = tywaveScope + "_" + name
+                if (scope == nameWithScope) true else false
+              case _ => false
+            }
+            var subVariables = Seq.empty[tywaves_symbol_table.Variable]
+            listChildren.zip(listChildrenChisel).foreach { child =>
+              subVariables = subVariables ++ findChildVariables(child, ir, listVcdInfo, listChiselInfo)
+            }
+            // It is not a ground type
+//            val subVariables = findChildVariables(
+//              listTuple.find {
+//                case (
+//                      Name(_, scope, _),
+//                      Direction(dir),
+//                      HardwareType(hardwareType),
+//                      Type(typeName),
+//                      VerilogSignals(verilogSignals),
+//                    ) => if (scope == name) true else false
+//                case _ => false
+//              }.get,
+//              ir,
+//              listTuple,
+//            )
+            val width = subVariables.map(v => v.getWidth).sum
+            childVariables = childVariables ++ Seq(tywaves_symbol_table.Variable(
+              name,
+              typeName,
+              tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
+              realType = tywaves_symbol_table.realtype.Bundle(
+                subVariables,
+                vcdName = Some(name),
+              ),
+            ))
+          }
+          childVariables
+        case (Name(_, _, _), Direction(_), Type(_)) =>
+          childVariables
+        case other =>
+          throw new NotImplementedError("This branch shouldn't be reached.")
+      }
+    else {
+      Seq.empty
+    }
+  }
+
+  private def findChildScopes[Tuple](value: Tuple): Seq[tywaves_symbol_table.Scope] =
+    Seq.empty
 }
