@@ -65,16 +65,34 @@ class ChiselIRParser
 
     ports.put(
       elId,
-      (Name(name, scope, parentModule), Direction(dir.toString), Type(portData.typeName) /*, port*/ ),// Fixme: type name
-    )                                                                                   // Add the port and its name
+      (
+        Name(name, scope, parentModule),
+        Direction(dir.toString),
+        Type(portData.typeName), /*, port*/
+      ),                         // Fixme: type name
+    )                            // Add the port and its name
 
     // Types from here: https://github.com/chipsalliance/chisel?tab=readme-ov-file#data-types-overview
     portData match {
       case agg: Aggregate =>
         // TODO: check this
         println(s"AggregateType: $agg")
-        parseAggregate(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), agg, parentModule)
-      case _ => parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), portData, parentModule)
+        parseAggregate(
+          elId,
+          Name(name, scope, parentModule),
+          Direction(dir.toString),
+          HardwareType("Port"),
+          agg,
+          parentModule,
+        )
+      case _ => parseElement(
+          elId,
+          Name(name, scope, parentModule),
+          Direction(dir.toString),
+          HardwareType("Port"),
+          portData,
+          parentModule,
+        )
     }
   }
 
@@ -88,12 +106,12 @@ class ChiselIRParser
    * types.
    */
   override def parseAggregate(
-      elId:     ElId,
-      name:     Name,
-      dir:      Direction,
-      hwType:   HardwareType,
-      aggrType: Aggregate,
-      parentModule: String
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      aggrType:     Aggregate,
+      parentModule: String,
   ): Unit = {
 
     super.parseAggregate(elId, name, dir, hwType, aggrType, parentModule)
@@ -127,7 +145,14 @@ class ChiselIRParser
    *
    * This function handles special cases of aggregate types.
    */
-  def parseElement(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, dataType: Data, parentModule: String): Unit =
+  def parseElement(
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      dataType:     Data,
+      parentModule: String,
+  ): Unit =
     dataType match {
       case aggr: Bundle    => parseAggregate(elId, name, dir, hwType, aggr, parentModule)
       case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr, parentModule) // TODO: Implement
@@ -147,11 +172,13 @@ class ChiselIRParser
       case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register")))
       case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register")))
 
-      case _: chiselIR.Connect    => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
-      case _: chiselIR.DefPrim[?] => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None
-      case _: chiselIR.WhenBegin  => Console.err.println("ChiselIRParser: Parsing WhenBegin. Skip."); None
-      case _: chiselIR.WhenEnd    => Console.err.println("ChiselIRParser: Parsing WhenEnd. Skip."); None
-      case _: chiselIR.Printf     => Console.err.println("ChiselIRParser: Parsing Printf. Skip."); None
+      case _: chiselIR.Connect      => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
+      case _: chiselIR.DefPrim[?]   => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None
+      case _: chiselIR.WhenBegin    => Console.err.println("ChiselIRParser: Parsing WhenBegin. Skip."); None
+      case _: chiselIR.WhenEnd      => Console.err.println("ChiselIRParser: Parsing WhenEnd. Skip."); None
+      case _: chiselIR.Printf       => Console.err.println("ChiselIRParser: Parsing Printf. Skip."); None
+      case _: chiselIR.AltBegin     => Console.err.println("ChiselIRParser: Parsing AltBegin. Skip."); None
+      case _: chiselIR.OtherwiseEnd => Console.err.println("ChiselIRParser: Parsing OtherwiseEnd. Skip."); None
       case a =>
         println(s"a a a: $a")
         None
@@ -165,7 +192,7 @@ class ChiselIRParser
           Direction(dataType.direction.toString),
           hwType,
           dataType,
-          parentModule
+          parentModule,
         )
       case None => // Skip
     }
