@@ -194,6 +194,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               tywaves_symbol_table.Scope(
                 realTywaveScope,
                 findChildVariables(
+                  elId,
                   value,
                   ir,
                   gDebugIRParser.signals.values.toSeq,
@@ -240,18 +241,24 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         throw new NotImplementedError("This branch shouldn't be reached.")
     }
 
-  private def findChiselTypeName[Tuple](nameGuess: String, listChiselInfo: Seq[Tuple]): String =
-    listChiselInfo.filter {
-      case (Name(name, scope, _), Direction(_), Type(_)) =>
-        if (name == nameGuess) true else false
-      case _ => false
-    }.head match {
-      case (Name(_, _, _), Direction(_), Type(typeName)) => typeName
+  private def findChiselTypeName[Tuple](elIdGuess: ElId, nameGuess: String, listChiselInfo: Seq[Tuple]): String =
+    chiselIRParser.allElements(elIdGuess) match {
+      case (Name(name, scope, _), Direction(_), Type(tpe)) =>
+        tpe
       case _ => throw new NotImplementedError("This branch shouldn't be reached.")
     }
+//    listChiselInfo.filter {
+//      case (Name(name, scope, _), Direction(_), Type(_)) =>
+//        if (name == nameGuess) true else false
+//      case _ => false
+//    }.head match {
+//      case (Name(_, _, _), Direction(_), Type(typeName)) => typeName
+//      case _ => throw new NotImplementedError("This branch shouldn't be reached.")
+//    }
 
   /// Find the child variables of a given tuple for a given representation
   private def findChildVariables[Tuple](
+      elId:           ElId,
       tuple:          Tuple,
       ir:             String,
       listVcdInfo:    Seq[Tuple],
@@ -269,9 +276,9 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             ) =>
           val listChildren = listVcdInfo.filter {
             case (
-                  Name(childName, scope, _),
+                  Name(_, scope, _),
                   Direction(_),
-                  HardwareType(_, size),
+                  HardwareType(_, _),
                   Type(_),
                   VerilogSignals(_),
                 ) =>
@@ -282,7 +289,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
           if (verilogSignals.length <= 1 && listChildren.isEmpty) {
             childVariables = childVariables :+ tywaves_symbol_table.Variable(
               name,
-              findChiselTypeName(name, listChiselInfo),
+              findChiselTypeName(elId, name, listChiselInfo),
               tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
               realType = tywaves_symbol_table.realtype.Ground(size.getOrElse(0), verilogSignals.head),
             )
@@ -299,13 +306,26 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 //              case _ => false
 //            }
             var subVariables = Seq.empty[tywaves_symbol_table.Variable]
-            listChildren.foreach { child =>
-              subVariables = subVariables ++ findChildVariables(child, ir, listVcdInfo, listChiselInfo)
+            gDebugIRParser.signals.filter {
+              case (_, (
+                Name(_, scope, _),
+                Direction(_),
+                HardwareType(_, _),
+                Type(_),
+                VerilogSignals(_),
+                )) =>
+                val nameWithScope = parentScope + "_" + name
+                if (scope == nameWithScope) true else false
+              case _ => false
+            }
+              .foreach { child =>
+//                println(Console.GREEN + s"Child: $child" + Console.RESET)
+              subVariables = subVariables ++ findChildVariables(child._1, child._2, ir, listVcdInfo, listChiselInfo)
             }
 
             childVariables = childVariables ++ Seq(tywaves_symbol_table.Variable(
               name,
-              findChiselTypeName(name, listChiselInfo),
+              findChiselTypeName(elId, name, listChiselInfo),
               tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
               realType = tywaves_symbol_table.realtype.Bundle(
                 subVariables,
