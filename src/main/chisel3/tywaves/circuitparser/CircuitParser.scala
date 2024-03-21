@@ -13,13 +13,36 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
   def parseCircuit(circuit: T): Unit
   def parseModule(module:   ModuleT): Unit
   def parsePort(scope:      String, port: PortT, parentModule: String): Unit
-  def parseAggregate(elId: ElId, name: Name, dir: Direction, hwType: HardwareType, agg: AggregateT, parentModule: String): Unit = {
+  def parseAggregate(
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      agg:          AggregateT,
+      parentModule: String,
+  ): Unit = {
+    val aggString = agg match {
+      case fir:    firrtl.ir.AggregateType => fir.getClass.getName
+      case chisel: chisel3.Record          => chisel.className
+      case aggr:   chisel3.Aggregate       => aggr.typeName
+    }
     if (hwType == HardwareType("Port"))
-      flattenedPorts.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, hwType, Type(agg.getClass.getName)))
-    allElements.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, Type(agg.getClass.getName)))
+      flattenedPorts.put(
+        elId.addName(name.name),
+        (name.addTywaveScope(parentModule), dir, hwType, Type(aggString)),
+      )
+
+    allElements.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, Type(aggString)))
   }
 
-  def parseElement(elId:        ElId, name:   Name, dir: Direction, hwType: HardwareType, element: ElementT, parentModule: String): Unit
+  def parseElement(
+      elId:         ElId,
+      name:         Name,
+      dir:          Direction,
+      hwType:       HardwareType,
+      element:      ElementT,
+      parentModule: String,
+  ): Unit
   def parseBodyStatement(scope: String, body: BodyStatementT, parentModule: String): Unit
 
   def dumpMaps(fileDump: String): Unit = {

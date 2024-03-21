@@ -8,13 +8,30 @@ package foo
 import chisel3._
 import circt.stage.ChiselStage
 
-// To test the nested module case
+class MyBundleT(n: Int) extends Bundle {
+  val a = UInt(n.W)
+  val b = UInt(n.W)
+
+  val nestedBundle = new Bundle {
+    val z = Bool()
+  }
+}
+
 class Bar extends Module {
   val io = IO(new Bundle {
     val a   = Input(Bool())
     val b   = Input(Bool())
     val out = Output(Bool())
   })
+
+  val inputSum  = IO(Input(new MyBundleT(8)))
+  val outputSum = IO(Output(SInt(8.W)))
+  when(inputSum.nestedBundle.z === true.B) {
+    outputSum := inputSum.a.asSInt + inputSum.b.asSInt
+  }.otherwise {
+    outputSum := inputSum.a.asSInt - inputSum.b.asSInt
+  }
+
   val wire = Wire(Bool())
   wire   := io.a & io.b
   io.out := wire

@@ -177,12 +177,22 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         println()
         println("ElId: " + elId)
         println("Found elements: " + irs.size)
+        // real tywavescope: the one in chiselIR
+        val realTywaveScope = irs.filter {
+          case (ir, _) => ir == "chiselIR"
+        }.head match {
+          case (_, Some((Name(_, _, tywaveScope), Direction(_), Type(_)))) =>
+            tywaveScope
+          case other =>
+            throw new NotImplementedError(s"This branch shouldn't be reached. $other")
+        }
+        // Iterate over the IRs
         irs.foreach {
-          case (ir, Some(value)) =>
-            println(s"IR: $ir", value)
+          case (ir, Some(_value)) =>
+            val value = _value
             val scope =
               tywaves_symbol_table.Scope(
-                findTywaveScope(value),
+                realTywaveScope,
                 findChildVariables(
                   value,
                   ir,
@@ -219,7 +229,6 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         )
       )
     ).toSeq
-
   }
 
   /// Find a tywave scope
@@ -255,7 +264,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               Name(name, _, tywaveScope),
               Direction(dir),
               HardwareType(hardwareType),
-              Type(_),
+              Type(tpe),
               VerilogSignals(verilogSignals),
             ) =>
           // If there's only one signal, it's a leaf
