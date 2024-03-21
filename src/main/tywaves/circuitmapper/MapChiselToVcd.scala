@@ -261,14 +261,25 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     if (ir == "debugIR")
       tuple match {
         case (
-              Name(name, _, tywaveScope),
+              Name(name, parentScope, tywaveScope),
               Direction(dir),
               HardwareType(hardwareType),
-              Type(tpe),
+              Type(_),
               VerilogSignals(verilogSignals),
             ) =>
-          // If there's only one signal, it's a leaf
-          if (verilogSignals.length <= 1) {
+          val listChildren = listVcdInfo.filter {
+            case (
+                  Name(childName, scope, _),
+                  Direction(_),
+                  HardwareType(_),
+                  Type(_),
+                  VerilogSignals(_),
+                ) =>
+              val nameWithScope = parentScope + "_" + name
+              if (scope == nameWithScope) true else false
+            case _ => false
+          } // If there's only one signal, it's a leaf: however the leaf can be a reference to a bundle and not only a ground signal
+          if (verilogSignals.length <= 1 && listChildren.isEmpty) {
             childVariables = childVariables :+ tywaves_symbol_table.Variable(
               name,
               findChiselTypeName(name, listChiselInfo),
@@ -276,28 +287,17 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               realType = tywaves_symbol_table.realtype.Ground(1, verilogSignals.head),
             )
           } else {
-            val listChildren = listVcdInfo.filter {
-              case (
-                    Name(_, scope, _),
-                    Direction(_),
-                    HardwareType(_),
-                    Type(_),
-                    VerilogSignals(_),
-                  ) =>
-                val nameWithScope = tywaveScope + "_" + name
-                if (scope == nameWithScope) true else false
-              case _ => false
-            }
-            val listChildrenChisel = listChiselInfo.filter {
-              case (
-                    Name(_, scope, _),
-                    Direction(_),
-                    Type(_),
-                  ) =>
-                val nameWithScope = tywaveScope + "_" + name
-                if (scope == nameWithScope) true else false
-              case _ => false
-            }
+
+//            val listChildrenChisel = listChiselInfo.filter {
+//              case (
+//                    Name(_, scope, _),
+//                    Direction(_),
+//                    Type(_),
+//                  ) =>
+//                val nameWithScope = tywaveScope + "_" + name
+//                if (scope == nameWithScope) true else false
+//              case _ => false
+//            }
             var subVariables = Seq.empty[tywaves_symbol_table.Variable]
             listChildren.foreach { child =>
               subVariables = subVariables ++ findChildVariables(child, ir, listVcdInfo, listChiselInfo)
