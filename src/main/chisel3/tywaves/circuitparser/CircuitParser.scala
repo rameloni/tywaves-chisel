@@ -13,6 +13,28 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
   def parseCircuit(circuit: T): Unit
   def parseModule(module:   ModuleT): Unit
   def parsePort(scope:      String, port: PortT, parentModule: String): Unit
+
+  def getWidth(agg: AggregateT): Int = {
+    val widthPattern = "<(\\d+)>".r
+    agg match {
+      case fir: firrtl.ir.AggregateType =>
+        fir match {
+          case firrtl.ir.BundleType(fields) => fields.map(f =>
+              f.tpe match {
+                case firrtl.ir.GroundType(width) => width.serialize match {
+                  case widthPattern(width) => width.toInt
+                }
+                case _: firrtl.ir.AggregateType  => this.getWidth(f.tpe.asInstanceOf[AggregateT])
+              }
+            // extract the number <width> from the GroundType
+            ).sum
+        }
+
+      case chisel: chisel3.Record    => chisel.getWidth
+      case aggr:   chisel3.Aggregate => aggr.getWidth
+    }
+  }
+
   def parseAggregate(
       elId:         ElId,
       name:         Name,
@@ -26,7 +48,7 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
       case chisel: chisel3.Record          => chisel.className
       case aggr:   chisel3.Aggregate       => aggr.typeName
     }
-    if (hwType == HardwareType("Port"))
+    if (hwType == HardwareType("Port", Some(this.getWidth(agg))))
       flattenedPorts.put(
         elId.addName(name.name),
         (name.addTywaveScope(parentModule), dir, hwType, Type(aggString)),

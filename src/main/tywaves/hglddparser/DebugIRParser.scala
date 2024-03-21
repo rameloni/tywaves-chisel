@@ -80,7 +80,6 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
           f.replaceAll("\\.\\./", "")
         ), // Use the same of the other parsers (ChiselIR and FIRRTL IR) TODO: needs better version
         _,
-
       )
     )
 
@@ -121,12 +120,18 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
    * It collects all the [[Value.sig_name]]s from the value and add them to
    * [[signals]].
    */
-  private def parsePortVarFromModule(fileInfo: Seq[String], portVar: PortVar, scope: String, parentModule: String): Unit = {
-    val elId  = createId(fileInfo, portVar.hgl_loc, portVar.var_name)
-    val name  = Name(portVar.var_name, scope, parentModule)
-    val dir   = Direction("Unknown")
-    val typ   = Type(portVar.type_name)
-    val hwTyp = HardwareType(portVar.type_name)
+  private def parsePortVarFromModule(
+      fileInfo:     Seq[String],
+      portVar:      PortVar,
+      scope:        String,
+      parentModule: String,
+  ): Unit = {
+    val elId = createId(fileInfo, portVar.hgl_loc, portVar.var_name)
+    val name = Name(portVar.var_name, scope, parentModule)
+    val dir  = Direction("Unknown")
+    val typ  = Type(portVar.type_name)
+    val hwTyp = HardwareType(
+      portVar.type_name, Some(portVar.packed_range.map(sizes => sizes.head - sizes.last + 1).getOrElse(1)))
 
     val sigNames =
       portVar.value match {

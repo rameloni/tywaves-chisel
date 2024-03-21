@@ -9,7 +9,7 @@ import scala.math.Ordered.orderingToOrdered
 object Defaults {
   lazy val elId   = ElId("", 0, 0)
   lazy val name   = Name("", "", "")
-  lazy val hwType = HardwareType("")
+  lazy val hwType = HardwareType("", None)
   lazy val dir    = Direction("")
   lazy val typ    = Type("")
 }
@@ -45,7 +45,7 @@ case class Type(name: String) extends Ordered[Type] {
   override def toString: String = s"Type: $name"
 
 } // TODO: add pretty name to type
-case class HardwareType(name: String) {
+case class HardwareType(name: String, size: Option[Int]) {
   override def toString: String = s"HardwareType: $name"
 
 }

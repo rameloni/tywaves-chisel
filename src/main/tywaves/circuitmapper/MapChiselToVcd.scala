@@ -105,7 +105,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
               // Check if value is the one with SystemVerilog names
               value match {
-                case (Name(_, _, _), Direction(_), HardwareType(_), Type(_), VerilogSignals(names)) =>
+                case (Name(_, _, _), Direction(_), HardwareType(_, _), Type(_), VerilogSignals(names)) =>
                   bw.write(s"\t\"SystemVerilogNames and (maybe) VCD\": ${ujson.write(names)}\n")
                 case _ =>
               }
@@ -234,15 +234,15 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   /// Find a tywave scope
   private def findTywaveScope[Tuple](tuple: Tuple): String =
     tuple match {
-      case (Name(_, _, tywaveScope), Direction(_), HardwareType(_), Type(_), VerilogSignals(_)) => tywaveScope
-      case (Name(_, _, tywaveScope), Direction(_), Type(_))                                     => tywaveScope
+      case (Name(_, _, tywaveScope), Direction(_), HardwareType(_, _), Type(_), VerilogSignals(_)) => tywaveScope
+      case (Name(_, _, tywaveScope), Direction(_), Type(_))                                        => tywaveScope
       case other =>
         throw new NotImplementedError("This branch shouldn't be reached.")
     }
 
   private def findChiselTypeName[Tuple](nameGuess: String, listChiselInfo: Seq[Tuple]): String =
     listChiselInfo.filter {
-      case (Name(name, _, _), Direction(_), Type(_)) =>
+      case (Name(name, scope, _), Direction(_), Type(_)) =>
         if (name == nameGuess) true else false
       case _ => false
     }.head match {
@@ -263,7 +263,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         case (
               Name(name, parentScope, tywaveScope),
               Direction(dir),
-              HardwareType(hardwareType),
+              HardwareType(hardwareType, size),
               Type(_),
               VerilogSignals(verilogSignals),
             ) =>
@@ -271,7 +271,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             case (
                   Name(childName, scope, _),
                   Direction(_),
-                  HardwareType(_),
+                  HardwareType(_, size),
                   Type(_),
                   VerilogSignals(_),
                 ) =>
@@ -284,7 +284,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               name,
               findChiselTypeName(name, listChiselInfo),
               tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
-              realType = tywaves_symbol_table.realtype.Ground(1, verilogSignals.head),
+              realType = tywaves_symbol_table.realtype.Ground(size.getOrElse(0), verilogSignals.head),
             )
           } else {
 

@@ -81,7 +81,7 @@ class ChiselIRParser
           elId,
           Name(name, scope, parentModule),
           Direction(dir.toString),
-          HardwareType("Port"),
+          HardwareType("Port", None),
           agg,
           parentModule,
         )
@@ -89,7 +89,7 @@ class ChiselIRParser
           elId,
           Name(name, scope, parentModule),
           Direction(dir.toString),
-          HardwareType("Port"),
+          HardwareType("Port", None),
           portData,
           parentModule,
         )
@@ -158,7 +158,7 @@ class ChiselIRParser
       case aggr: Vec[Data] => parseAggregate(elId, name, dir, hwType, aggr, parentModule) // TODO: Implement
       case _ =>
         // TODO: other cases need to be implemented. For now, simply add the element to the map
-        if (hwType == HardwareType("Port"))
+        if (hwType == HardwareType("Port", Some(dataType.getWidth)))
           flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(dataType.typeName)))
         allElements.put(elId.addName(name.name), (name, dir, Type(dataType.typeName)))
       case _ => throw new Exception(s"Failed to parse type $dataType. Unknown type.")
@@ -168,9 +168,9 @@ class ChiselIRParser
   /** Parse a [[chiselIR.Command]]. In FIRRTL, commands are Statements */
   override def parseBodyStatement(scope: String, body: chiselIR.Command, parentModule: String): Unit = {
     val parseRes = body match {
-      case chiselIR.DefWire(sourceInfo, dataType)             => Some((sourceInfo, dataType, HardwareType("Wire")))
-      case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register")))
-      case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register")))
+      case chiselIR.DefWire(sourceInfo, dataType)             => Some((sourceInfo, dataType, HardwareType("Wire", Some(dataType.getWidth))))
+      case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
+      case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
 
       case _: chiselIR.Connect      => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
       case _: chiselIR.DefPrim[?]   => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None

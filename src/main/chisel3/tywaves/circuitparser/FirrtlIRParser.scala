@@ -63,12 +63,12 @@ class FirrtlIRParser
           elId,
           Name(name, scope, parentModule),
           Direction(dir.toString),
-          HardwareType("Port"),
+          HardwareType("Port", Some(this.getWidth(agg))),
           agg,
           parentModule,
         )
       case _ =>
-        parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port"), firrtlType, parentModule)
+        parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port", None), firrtlType, parentModule)
     }
   }
 
@@ -122,7 +122,7 @@ class FirrtlIRParser
       case aggr: VectorType => parseAggregate(elId, name, dir, hwType, aggr, parentModule) // TODO: Implement
       case ClockType | AsyncResetType | ResetType |
           UIntType(_) | SIntType(_) | AnalogType(_) =>
-        if (hwType == HardwareType("Port"))
+        if (hwType == HardwareType("Port", None))
           flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(firrtlType.toString)))
         allElements.put(elId.addName(name.name), (name, dir, Type(firrtlType.toString)))
       case _ => throw new Exception(s"Failed to parse type $firrtlType. Unknown type.")
@@ -136,11 +136,11 @@ class FirrtlIRParser
       case Block(stmts)             => stmts.foreach(parseBodyStatement(scope, _, parentModule))
       case DefWire(info, name, tpe) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Wire"), tpe, parentModule)
+        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Wire", None), tpe, parentModule)
 
       case DefRegisterWithReset(info, name, tpe, _, _, _) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Register"), tpe, parentModule)
+        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Register", None), tpe, parentModule)
 
       case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")
