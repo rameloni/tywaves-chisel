@@ -1,5 +1,7 @@
 package tywaves.circuitmapper
 
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+
 import scala.math.Ordered.orderingToOrdered
 
 // TODO: Define a case class to output the information in json with circe
@@ -55,6 +57,42 @@ case class Direction(name: String) extends Ordered[Direction] {
 case class VerilogSignals(names: Seq[String])
 
 object tywaves_symbol_table {
+  import io.circe._
+  object tywaves_encoders {
+    import io.circe.generic.extras._
+    implicit val customConfiguration: Configuration =
+      Configuration.default.withSnakeCaseMemberNames.withSnakeCaseMemberNames
+
+    implicit val encodedTywaveState: Encoder[TywaveState] = deriveConfiguredEncoder[TywaveState]
+    implicit val encodedScope:       Encoder[Scope]       = deriveConfiguredEncoder[Scope]
+    implicit val encodedVariable:    Encoder[Variable]    = deriveConfiguredEncoder[Variable]
+
+    implicit val encodeHwType: Encoder[hwtype.HwType] = Encoder.instance {
+      case hwtype.Wire    => Json.fromString("wire")
+      case hwtype.Reg     => Json.fromString("reg")
+      case hwtype.Mem     => Json.fromString("mem")
+      case hwtype.Unknown => Json.fromString("unknown")
+      case _: hwtype.Port => Json.Null
+    }
+
+    implicit val encodePort: Encoder[hwtype.Port] = deriveConfiguredEncoder[hwtype.Port]
+    implicit val encodeDirection: Encoder[direction.Directions] = Encoder.instance {
+      case direction.Input   => Json.fromString("input")
+      case direction.Output  => Json.fromString("output")
+      case direction.Inout   => Json.fromString("inout")
+      case direction.Unknown => Json.fromString("unknown")
+    }
+
+    implicit val encodeRealType: Encoder[realtype.RealType] = Encoder.instance {
+      case realtype.Unknown => Json.fromString("unknown")
+      case g: realtype.Ground => Json.obj("ground" -> encodeGround(g))
+      case v: realtype.Vec    => Json.obj("vec" -> encodeVec(v))
+      case b: realtype.Bundle => Json.obj("bundle" -> encodeBundle(b))
+    }
+    implicit val encodeGround: Encoder[realtype.Ground] = deriveConfiguredEncoder[realtype.Ground]
+    implicit val encodeVec:    Encoder[realtype.Vec]    = deriveConfiguredEncoder[realtype.Vec]
+    implicit val encodeBundle: Encoder[realtype.Bundle] = deriveConfiguredEncoder[realtype.Bundle]
+  }
 
   /** The state for Tywaves */
   case class TywaveState(var scopes: Seq[Scope])
@@ -62,7 +100,12 @@ object tywaves_symbol_table {
   /** A scope in the state */
   case class Scope(name: String, childVariables: Seq[Variable], childScopes: Seq[Scope])
 
-  case class Variable(name: String, typeName: String, hwType: hwtype.HwType, realType: realtype.RealType) {
+  case class Variable(
+      name:     String,
+      typeName: String,
+      hwType:   hwtype.HwType,
+      realType: realtype.RealType,
+  ) {
     def getWidth: Int = realType.getWidth
   }
 
@@ -71,6 +114,7 @@ object tywaves_symbol_table {
     def from_string(tpe: String, dir: Option[String]): HwType =
       (tpe, dir) match {
         case ("Port", Some(dir)) => Port(direction.from_string(dir))
+        case ("logic", _)        => Wire
         case _                   => Unknown
       }
     sealed trait HwType

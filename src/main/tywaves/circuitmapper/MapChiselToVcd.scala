@@ -4,8 +4,6 @@ import chisel3.RawModule
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
 import firrtl.stage.FirrtlCircuitAnnotation
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
 import tywaves.hglddparser.DebugIRParser
 import tywaves.utils.UniqueHashMap
 
@@ -158,18 +156,10 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   }
 
   def createTywavesState(): Unit = {
-    import io.circe.generic.auto._
     import io.circe.syntax._
     import java.io.PrintWriter
-
-//    val tywaveState = chiselIRParser.tywaveState.asJson
-//    // Circe to output json
-//    println(tywaveState)
-//    val printWriter = new PrintWriter(s"$logSubDir/tywavesState.json")
-//    printWriter.write(tywaveState.spaces2) // Use spaces2 to format the JSON with indentation
-//    printWriter.close()
-
     import tywaves_symbol_table._
+    import tywaves_symbol_table.tywaves_encoders._
 
     val groupIrPerElement: Map[ElId, Seq[(String, Option[?])]] = joinMapCircuits(
       Seq(
@@ -207,6 +197,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         }
     }
 
+    // Output the TywavesState in json
     val tywaveState = tywaves_symbol_table.TywaveState(mergeScopes(scopes)).asJson
     val printWriter = new PrintWriter(s"$logSubDir/tywavesState.json")
     printWriter.write(tywaveState.spaces2) // Use spaces2 to format the JSON with indentation
@@ -214,6 +205,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
   }
 
+  /// Merge common scopes together
   def mergeScopes(scopes: Seq[tywaves_symbol_table.Scope]): Seq[tywaves_symbol_table.Scope] = {
     // Join all the scopes with the same names
     val groupScopes = scopes.groupBy(_.name)
@@ -230,7 +222,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
   }
 
-  // Tywave scope of a variable is the parent module name
+  /// Find a tywave scope
   private def findTywaveScope[Tuple](tuple: Tuple): String =
     tuple match {
       case (Name(_, _, tywaveScope), Direction(_), HardwareType(_), Type(_), VerilogSignals(_)) => tywaveScope
@@ -239,6 +231,17 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         throw new NotImplementedError("This branch shouldn't be reached.")
     }
 
+  private def findChiselTypeName[Tuple](nameGuess: String, listChiselInfo: Seq[Tuple]): String =
+    listChiselInfo.filter {
+      case (Name(name, _, _), Direction(_), Type(_)) =>
+        if (name == nameGuess) true else false
+      case _ => false
+    }.head match {
+      case (Name(_, _, _), Direction(_), Type(typeName)) => typeName
+      case _ => throw new NotImplementedError("This branch shouldn't be reached.")
+    }
+
+  /// Find the child variables of a given tuple for a given representation
   private def findChildVariables[Tuple](
       tuple:          Tuple,
       ir:             String,
@@ -252,19 +255,18 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               Name(name, _, tywaveScope),
               Direction(dir),
               HardwareType(hardwareType),
-              Type(typeName),
+              Type(_),
               VerilogSignals(verilogSignals),
             ) =>
+          // If there's only one signal, it's a leaf
           if (verilogSignals.length <= 1) {
-            println(s"-----------> $hardwareType <---------")
             childVariables = childVariables :+ tywaves_symbol_table.Variable(
               name,
-              typeName,
+              findChiselTypeName(name, listChiselInfo),
               tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
               realType = tywaves_symbol_table.realtype.Ground(1, verilogSignals.head),
             )
           } else {
-            println(s"---------> $name")
             val listChildren = listVcdInfo.filter {
               case (
                     Name(_, scope, _),
@@ -288,28 +290,13 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               case _ => false
             }
             var subVariables = Seq.empty[tywaves_symbol_table.Variable]
-            listChildren.zip(listChildrenChisel).foreach { child =>
+            listChildren.foreach { child =>
               subVariables = subVariables ++ findChildVariables(child, ir, listVcdInfo, listChiselInfo)
             }
-            // It is not a ground type
-//            val subVariables = findChildVariables(
-//              listTuple.find {
-//                case (
-//                      Name(_, scope, _),
-//                      Direction(dir),
-//                      HardwareType(hardwareType),
-//                      Type(typeName),
-//                      VerilogSignals(verilogSignals),
-//                    ) => if (scope == name) true else false
-//                case _ => false
-//              }.get,
-//              ir,
-//              listTuple,
-//            )
-            val width = subVariables.map(v => v.getWidth).sum
+
             childVariables = childVariables ++ Seq(tywaves_symbol_table.Variable(
               name,
-              typeName,
+              findChiselTypeName(name, listChiselInfo),
               tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
               realType = tywaves_symbol_table.realtype.Bundle(
                 subVariables,
