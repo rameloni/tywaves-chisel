@@ -99,7 +99,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
           (key, listMaps.map { case (name, map) => (name, map.get(key)) })
         }.toMap
 
-      println(join)
+//      println(join)
 
       val bw = new java.io.BufferedWriter(new java.io.FileWriter(dumpFile))
       join.foreach {
@@ -123,11 +123,11 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     }
 
     // Map modules
-    firrtlIRParser.modules.zip(chiselIRParser.modules).foreach {
-      case ((firrtlElId, (firrtlName, firrtlModule)), (chiselElId, (chiselName, chiselModule))) =>
-        println(s"firrtlElId: $firrtlElId, firrtlName: $firrtlName")
-        println(s"chiselElId: $chiselElId, chiselName: $chiselName")
-    }
+//    firrtlIRParser.modules.zip(chiselIRParser.modules).foreach {
+//      case ((firrtlElId, (firrtlName, firrtlModule)), (chiselElId, (chiselName, chiselModule))) =>
+//        println(s"firrtlElId: $firrtlElId, firrtlName: $firrtlName")
+//        println(s"chiselElId: $chiselElId, chiselName: $chiselName")
+//    }
 
     joinAndDump(Seq(
       ("chiselIR", chiselIRParser.modules),
@@ -180,9 +180,9 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     var scopes = Seq.empty[Scope]
     groupIrPerElement.foreach {
       case (elId, irs) =>
-        println()
-        println("ElId: " + elId)
-        println("Found elements: " + irs.size)
+//        println()
+//        println("ElId: " + elId)
+//        println("Found elements: " + irs.size)
         // real tywavescope: the one in chiselIR
         val realTywaveScope = irs.filter {
           case (ir, _) => ir == "chiselIR"
@@ -209,16 +209,25 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
                 findChildScopes(value),
               )
             scopes = scopes :+ scope
-            println(scope)
+
           case (ir, None) => println(s"IR: $ir", None)
         }
     }
+    // Merge the scopes and collect the top ports
+    val mergedScopes = mergeScopes(scopes)
+    val topPorts = mergedScopes.flatMap {
+      case Scope(_, childVariables, _) => childVariables.filter {
+          case Variable(_, _, hwType, _) => hwType.isInstanceOf[tywaves_symbol_table.hwtype.Port]
+        }
+    }
 
+    // Finalize the scopes
     val tbScope = Scope(
       tbScopeName,
-      Seq.empty,
-      mergeScopes(scopes),
+      topPorts, // TODO: here all the external ports should be added
+      mergedScopes,
     )
+
     val topScope = Scope(
       topName,
       Seq.empty,
@@ -264,6 +273,16 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
       case _ => throw new NotImplementedError("This branch shouldn't be reached.")
     }
 
+  private def findChiselHwType(elIdGuess: ElId): Option[tywaves_symbol_table.hwtype.HwType] =
+    // Check within the ports otherwise
+    firrtlIRParser.allElements.get(elIdGuess) match {
+      case Some((Name(_, _, _), Direction(dir), Type(_))) =>
+        if (dir == "Input" || dir == "Output")
+          Some(tywaves_symbol_table.hwtype.from_string("Port", Some(dir)))
+        else None
+      case _ => None
+    }
+
   /// Find the child variables of a given tuple for a given representation
   private def findChildVariables[Tuple](
       elId:           ElId,
@@ -298,7 +317,9 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             childVariables = childVariables :+ tywaves_symbol_table.Variable(
               name,
               findChiselTypeName(elId, name, listChiselInfo),
-              tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
+              findChiselHwType(elId).getOrElse(
+                tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir))
+              ),
               realType = tywaves_symbol_table.realtype.Ground(size.getOrElse(0), verilogSignals.head),
             )
           } else {
@@ -320,14 +341,15 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
               case _ => false
             }
               .foreach { child =>
-//                println(Console.GREEN + s"Child: $child" + Console.RESET)
                 subVariables = subVariables ++ findChildVariables(child._1, child._2, ir, listVcdInfo, listChiselInfo)
               }
 
             childVariables = childVariables ++ Seq(tywaves_symbol_table.Variable(
               name,
               findChiselTypeName(elId, name, listChiselInfo),
-              tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir)),
+              findChiselHwType(elId).getOrElse(
+                tywaves_symbol_table.hwtype.from_string(hardwareType, Some(dir))
+              ),
               realType = tywaves_symbol_table.realtype.Bundle(
                 subVariables,
                 vcdName = Some(name),

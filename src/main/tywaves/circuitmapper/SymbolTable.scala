@@ -76,10 +76,16 @@ object tywaves_symbol_table {
       case hwtype.Reg     => Json.fromString("reg")
       case hwtype.Mem     => Json.fromString("mem")
       case hwtype.Unknown => Json.fromString("unknown")
-      case _: hwtype.Port => Json.Null
+      case p: hwtype.Port => encodePort(p)
     }
 
-    implicit val encodePort: Encoder[hwtype.Port] = deriveConfiguredEncoder[hwtype.Port]
+    implicit val encodePort: Encoder[hwtype.Port] = Encoder.instance { p =>
+      Json.obj(
+        "port" -> Json.obj(
+          "direction" -> encodeDirection(p.dir)
+        )
+      )
+    }
     implicit val encodeDirection: Encoder[direction.Directions] = Encoder.instance {
       case direction.Input   => Json.fromString("input")
       case direction.Output  => Json.fromString("output")
