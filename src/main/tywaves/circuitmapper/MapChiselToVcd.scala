@@ -214,7 +214,8 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         }
     }
     // Merge the scopes and collect the top ports
-    val mergedScopes = mergeScopes(scopes)
+    val _mergedScopes = mergeScopes(scopes)
+    val mergedScopes  = cleanFromFlattenedSignals(_mergedScopes)
     val topPorts = mergedScopes.flatMap {
       case Scope(_, childVariables, _) => childVariables.filter {
           case Variable(_, _, hwType, _) => hwType.isInstanceOf[tywaves_symbol_table.hwtype.Port]
@@ -256,6 +257,28 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
       )
     ).toSeq
   }
+
+  /**
+   * Clean from flattened signals If for example there is a signal that is part
+   * of a bundle, it should be removed from the child signals of the scope. This
+   * ensures that there will be only one reference to the signal.
+   */
+  private def cleanFromFlattenedSignals(scopes: Seq[tywaves_symbol_table.Scope]): Seq[tywaves_symbol_table.Scope] =
+    scopes.map { scope =>
+      val childVariables = scope.childVariables.filter {
+        case tywaves_symbol_table.Variable(name, _, _, _) =>
+          // If this variable is not a child of another variable then keep it in the scope
+          !scope.childVariables.exists {
+            case tywaves_symbol_table.Variable(_, _, _, realType) =>
+              realType match {
+                case tywaves_symbol_table.realtype.Bundle(subVariables, _) =>
+                  subVariables.exists(_.name == name)
+                case _ => false
+              }
+          }
+      }
+      tywaves_symbol_table.Scope(scope.name, childVariables, scope.childScopes)
+    }
 
   /// Find a tywave scope
   private def findTywaveScope[Tuple](tuple: Tuple): String =
