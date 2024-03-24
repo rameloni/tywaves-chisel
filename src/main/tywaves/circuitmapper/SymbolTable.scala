@@ -14,6 +14,10 @@ object Defaults {
   lazy val typ    = Type("")
 }
 
+sealed trait CircuitIR
+
+sealed trait CircuitIRElement
+
 // TODO: Redefine the ElId in a more meaningful way
 case class ElId(
     source: String,

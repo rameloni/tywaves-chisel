@@ -20,11 +20,12 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
   private var _moduleDutName: String = ""
   private var _wantedWorkspacePath: String =
     Seq("test_run_dir", _moduleDutName, getClass.getSimpleName.stripSuffix("$")).mkString("/")
+  private var _withWaveforms: Boolean = false
 
   /** Launch and execute a simulation given a list of [[SimulatorSettings]]. */
-  def simulate[T <: RawModule, S <: TraceStyle](
+  def simulate[T <: RawModule](
       module:   => T,
-      settings: Seq[SimulatorSettings[S]] = Seq(),
+      settings: Seq[SimulatorSettings] = Seq(),
       simName:  String = "simulation",
   )(
       body: T => Unit
@@ -52,17 +53,26 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
     // Cleanup the simulation after the execution
     simulator.cleanup()
     println(_wantedWorkspacePath)
-    val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)
+    val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)(
+      "TOP",
+      Workspace.testbenchModuleName,
+      "dut"
+    )
     mapChiselToVcd.dumpLog()
     mapChiselToVcd.mapCircuits()
     mapChiselToVcd.createTywavesState()
 
+    if (_withWaveforms) {
+      val vcdPath         = s"${_wantedWorkspacePath}/workdir-default/trace.vcd"
+      val chiselStatePath = mapChiselToVcd.tywavesStatePath
+      TywavesInterface(vcdPath, Some(chiselStatePath))
+    }
   }
 
   /**
    * Set the backend compile settings. It sets settings such as the trace style.
    */
-  private def setBackendCompileSettings[T](settings: Seq[SimulatorSettings[T]]): Unit =
+  private def setBackendCompileSettings[T](settings: Seq[SimulatorSettings]): Unit = {
     settings.foreach {
       case t: TraceVcd =>
         _backendCompileSettings =
@@ -73,14 +83,21 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
             disabledWarnings = Seq(),
             disableFatalExitOnWarnings = false,
           )
+      case _: Tywaves => _withWaveforms = true
       case _ =>
     }
+
+    // Check if the trace style is set and tywaves is enabled
+    if (_backendCompileSettings.traceStyle.isEmpty && _withWaveforms) {
+      throw new Exception("Trace style must be set before enabling Tywaves")
+    }
+  }
 
   /**
    * Set the controller settings. It sets settings such as the trace output
    * enable.
    */
-  private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[SimulatorSettings[T]]): Unit =
+  private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[SimulatorSettings]): Unit =
     settings.foreach {
       case TraceVcd(_) => controller.setTraceEnabled(true)
       case s           => println(s"Unknown setting $s")

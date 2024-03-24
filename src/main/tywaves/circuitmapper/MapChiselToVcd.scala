@@ -13,9 +13,15 @@ import tywaves.utils.UniqueHashMap
  * It is used to extract the Chisel IR and the Firrtl IR from the ChiselStage
  * and then use it to generate the VCD file.
  */
-class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingDir") {
+class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingDir")(
+    topName:     String,
+    tbScopeName: String,
+    dutName:     String,
+) {
 
-  val logSubDir = s"$workingDir/tywaves-log"
+  val logSubDir        = s"$workingDir/tywaves-log"
+  val tywavesStatePath = s"$logSubDir/tywavesState.json"
+
   // Step 1. Get the annotation from the execution of ChiselStage and add the FirrtlCircuitAnnotation
   private val chiselStageAnno    = TypedConverter.getChiselStageAnno(generateModule, workingDir = logSubDir)
   private val completeChiselAnno = TypedConverter.addFirrtlAnno(chiselStageAnno)
@@ -192,7 +198,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             val value = _value
             val scope =
               tywaves_symbol_table.Scope(
-                realTywaveScope,
+                dutName,
                 findChildVariables(
                   elId,
                   value,
@@ -208,9 +214,19 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         }
     }
 
+    val tbScope = Scope(
+      tbScopeName,
+      Seq.empty,
+      mergeScopes(scopes),
+    )
+    val topScope = Scope(
+      topName,
+      Seq.empty,
+      Seq(tbScope),
+    )
     // Output the TywavesState in json
-    val tywaveState = tywaves_symbol_table.TywaveState(mergeScopes(scopes)).asJson
-    val printWriter = new PrintWriter(s"$logSubDir/tywavesState.json")
+    val tywaveState = tywaves_symbol_table.TywaveState(Seq(topScope)).asJson
+    val printWriter = new PrintWriter(s"$tywavesStatePath")
     printWriter.write(tywaveState.spaces2) // Use spaces2 to format the JSON with indentation
     printWriter.close()
 
@@ -247,14 +263,6 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
         tpe
       case _ => throw new NotImplementedError("This branch shouldn't be reached.")
     }
-//    listChiselInfo.filter {
-//      case (Name(name, scope, _), Direction(_), Type(_)) =>
-//        if (name == nameGuess) true else false
-//      case _ => false
-//    }.head match {
-//      case (Name(_, _, _), Direction(_), Type(typeName)) => typeName
-//      case _ => throw new NotImplementedError("This branch shouldn't be reached.")
-//    }
 
   /// Find the child variables of a given tuple for a given representation
   private def findChildVariables[Tuple](
@@ -295,33 +303,26 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             )
           } else {
 
-//            val listChildrenChisel = listChiselInfo.filter {
-//              case (
-//                    Name(_, scope, _),
-//                    Direction(_),
-//                    Type(_),
-//                  ) =>
-//                val nameWithScope = tywaveScope + "_" + name
-//                if (scope == nameWithScope) true else false
-//              case _ => false
-//            }
             var subVariables = Seq.empty[tywaves_symbol_table.Variable]
             gDebugIRParser.signals.filter {
-              case (_, (
-                Name(_, scope, _),
-                Direction(_),
-                HardwareType(_, _),
-                Type(_),
-                VerilogSignals(_),
-                )) =>
+              case (
+                    _,
+                    (
+                      Name(_, scope, _),
+                      Direction(_),
+                      HardwareType(_, _),
+                      Type(_),
+                      VerilogSignals(_),
+                    ),
+                  ) =>
                 val nameWithScope = parentScope + "_" + name
                 if (scope == nameWithScope) true else false
               case _ => false
             }
               .foreach { child =>
 //                println(Console.GREEN + s"Child: $child" + Console.RESET)
-              subVariables = subVariables ++ findChildVariables(child._1, child._2, ir, listVcdInfo, listChiselInfo)
-            }
+                subVariables = subVariables ++ findChildVariables(child._1, child._2, ir, listVcdInfo, listChiselInfo)
+              }
 
             childVariables = childVariables ++ Seq(tywaves_symbol_table.Variable(
               name,

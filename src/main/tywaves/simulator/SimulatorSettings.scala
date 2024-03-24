@@ -3,9 +3,7 @@ package tywaves.simulator
 import svsim.verilator
 
 /** Trait to represent the simulator settings */
-private trait SimulatorSettings[T] {
-  val trace: T
-}
+protected trait SimulatorSettings
 
 /**
  * [[TraceVcd]] is an abstracted representation of the
@@ -13,14 +11,17 @@ private trait SimulatorSettings[T] {
  * the user of the simulator
  */
 private[simulator] case class TraceVcd(traceUnderscore: Boolean = false)
-    extends SimulatorSettings[verilator.Backend.CompilationSettings.TraceStyle] {
+    extends SimulatorSettings {
   import verilator.Backend.CompilationSettings.TraceStyle
   val trace: TraceStyle = TraceStyle.Vcd(traceUnderscore)
 }
+
+private[simulator] case class Tywaves() extends SimulatorSettings
 
 /** Package object to expose the simulator settings */
 package object simSettings {
   // Interface to the simulation
   val EnableTrace:               TraceVcd = TraceVcd(false)
   val EnableTraceWithUnderscore: TraceVcd = TraceVcd(true)
+  val LaunchTywavesWaveforms:    Tywaves  = Tywaves()
 }
