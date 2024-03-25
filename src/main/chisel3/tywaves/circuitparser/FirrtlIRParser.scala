@@ -68,7 +68,14 @@ class FirrtlIRParser
           parentModule,
         )
       case _ =>
-        parseElement(elId, Name(name, scope, parentModule), Direction(dir.toString), HardwareType("Port", None), firrtlType, parentModule)
+        parseElement(
+          elId,
+          Name(name, scope, parentModule),
+          Direction(dir.toString),
+          HardwareType("Port", None),
+          firrtlType,
+          parentModule,
+        )
     }
   }
 
@@ -114,7 +121,7 @@ class FirrtlIRParser
       dir:          Direction,
       hwType:       HardwareType,
       firrtlType:   firrtlIR.Type,
-      parentModule: String
+      parentModule: String,
   ): Unit = {
     import firrtlIR._
     firrtlType match {
@@ -136,11 +143,25 @@ class FirrtlIRParser
       case Block(stmts)             => stmts.foreach(parseBodyStatement(scope, _, parentModule))
       case DefWire(info, name, tpe) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Wire", None), tpe, parentModule)
+        parseElement(
+          createId(info, Some(name)),
+          Name(name, scope, parentModule),
+          Direction("no dir"),
+          HardwareType("Wire", None),
+          tpe,
+          parentModule,
+        )
 
       case DefRegisterWithReset(info, name, tpe, _, _, _) =>
 //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
-        parseElement(createId(info, Some(name)), Name(name, scope, parentModule), Direction("no dir"), HardwareType("Register", None), tpe, parentModule)
+        parseElement(
+          createId(info, Some(name)),
+          Name(name, scope, parentModule),
+          Direction("no dir"),
+          HardwareType("Register", None),
+          tpe,
+          parentModule,
+        )
 
       case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")

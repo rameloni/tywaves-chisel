@@ -168,9 +168,12 @@ class ChiselIRParser
   /** Parse a [[chiselIR.Command]]. In FIRRTL, commands are Statements */
   override def parseBodyStatement(scope: String, body: chiselIR.Command, parentModule: String): Unit = {
     val parseRes = body match {
-      case chiselIR.DefWire(sourceInfo, dataType)             => Some((sourceInfo, dataType, HardwareType("Wire", Some(dataType.getWidth))))
-      case chiselIR.DefReg(sourceInfo, dataType, _)           => Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
-      case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) => Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
+      case chiselIR.DefWire(sourceInfo, dataType) =>
+        Some((sourceInfo, dataType, HardwareType("Wire", Some(dataType.getWidth))))
+      case chiselIR.DefReg(sourceInfo, dataType, _) =>
+        Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
+      case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) =>
+        Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
 
       case _: chiselIR.Connect      => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
       case _: chiselIR.DefPrim[?]   => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None

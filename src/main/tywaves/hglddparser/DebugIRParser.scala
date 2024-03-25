@@ -131,7 +131,9 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
     val dir  = Direction("Unknown")
     val typ  = Type(portVar.type_name)
     val hwTyp = HardwareType(
-      portVar.type_name, Some(portVar.packed_range.map(sizes => sizes.head - sizes.last + 1).getOrElse(1)))
+      portVar.type_name,
+      Some(portVar.packed_range.map(sizes => sizes.head - sizes.last + 1).getOrElse(1)),
+    )
 
     val sigNames =
       portVar.value match {

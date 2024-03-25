@@ -13,14 +13,16 @@ import tywaves.circuitmapper.MapChiselToVcd
  * backend.
  */
 object BetterEphemeralSimulator extends PeekPokeAPI {
-  import svsim.verilator.Backend.CompilationSettings.TraceStyle
 
   // Settings variable of the simulator
   private var _backendCompileSettings = verilator.Backend.CompilationSettings()
-  private var _moduleDutName: String = ""
-  private var _wantedWorkspacePath: String =
-    Seq("test_run_dir", _moduleDutName, getClass.getSimpleName.stripSuffix("$")).mkString("/")
-  private var _withWaveforms: Boolean = false
+  private var _withWaveforms          = false
+  private val _testRunDir             = "test_run_dir"
+  private var _moduleDutName          = ""
+  private val _simulatorName          = getClass.getSimpleName.stripSuffix("$")
+  private var _simName                = "simulation"
+  private def _wantedWorkspacePath =
+    Seq(_testRunDir, _moduleDutName, _simulatorName, _simName).mkString("/")
 
   /** Launch and execute a simulation given a list of [[SimulatorSettings]]. */
   def simulate[T <: RawModule](
@@ -38,15 +40,11 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       // Set the controller settings
       setControllerSettings(simulatedModule.controller, settings)
 
-      _wantedWorkspacePath =
-        Seq(
-          "test_run_dir",
-          simulatedModule.wrapped.name,
-          getClass.getSimpleName.stripSuffix("$"),
-          simName,
-        ).mkString("/")
+      // Update the wanted workspace path
+      _moduleDutName = simulatedModule.wrapped.name
+      _simName = simName
 
-      // Execute the simulation and return the result
+      // Launch the actual simulation and return the result
       body(simulatedModule.wrapped)
     }.result
 
@@ -54,10 +52,11 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
     simulator.cleanup()
     println(_wantedWorkspacePath)
     val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)(
-      "TOP",
-      Workspace.testbenchModuleName,
-      "dut"
+      topName = "TOP",
+      tbScopeName = Workspace.testbenchModuleName,
+      dutName = "dut",
     )
+
     mapChiselToVcd.dumpLog()
     mapChiselToVcd.mapCircuits()
     mapChiselToVcd.createTywavesState()
@@ -72,7 +71,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
   /**
    * Set the backend compile settings. It sets settings such as the trace style.
    */
-  private def setBackendCompileSettings[T](settings: Seq[SimulatorSettings]): Unit = {
+  private def setBackendCompileSettings(settings: Seq[SimulatorSettings]): Unit = {
     settings.foreach {
       case t: TraceVcd =>
         _backendCompileSettings =
@@ -97,27 +96,31 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
    * Set the controller settings. It sets settings such as the trace output
    * enable.
    */
-  private def setControllerSettings[T](controller: Simulation.Controller, settings: Seq[SimulatorSettings]): Unit =
+  private def setControllerSettings(controller: Simulation.Controller, settings: Seq[SimulatorSettings]): Unit =
     settings.foreach {
       case TraceVcd(_) => controller.setTraceEnabled(true)
-      case s           => println(s"Unknown setting $s")
+      case _: Tywaves =>
+      case s => println(s"Unknown Controller Setting $s")
     }
 
   // Simulators: DefaultSimulators
   private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulatorWithArgs[verilator.Backend] {
-    val backend = verilator.Backend.initializeFromProcessEnvironment()
-    val tag     = "default"
-    val commonCompilationSettings = CommonCompilationSettings(
-      optimizationStyle = CommonCompilationSettings.OptimizationStyle.OptimizeForCompilationSpeed,
-      availableParallelism = CommonCompilationSettings.AvailableParallelism.UpTo(4),
-      defaultTimescale = Some(CommonCompilationSettings.Timescale.FromString("1ms/1ms")),
-    )
-    val firtoolArgs: Seq[String] = Seq("-g", "--emit-hgldd")
-    val backendSpecificCompilationSettings = _backendCompileSettings
+    val backend:     verilator.Backend = verilator.Backend.initializeFromProcessEnvironment()
+    val tag:         String            = "default"
+    val firtoolArgs: Seq[String]       = Seq("-g", "--emit-hgldd")
 
-    println("Backend specific compilation settings: " + backendSpecificCompilationSettings)
+    val backendSpecificCompilationSettings: verilator.Backend.CompilationSettings = _backendCompileSettings
+    val commonCompilationSettings: CommonCompilationSettings =
+      CommonCompilationSettings(
+        optimizationStyle = CommonCompilationSettings.OptimizationStyle.OptimizeForCompilationSpeed,
+        availableParallelism = CommonCompilationSettings.AvailableParallelism.UpTo(4),
+        defaultTimescale = Some(CommonCompilationSettings.Timescale.FromString("1ms/1ms")),
+      )
 
-    /** Cleanup the simulation */
+    /**
+     * Cleanup the simulation and move the simulation workspace to the wanted
+     * workspace path.
+     */
     def cleanup(): Unit = {
       val tmpDir  = os.Path(workspacePath)
       val workDir = os.pwd / os.RelPath(_wantedWorkspacePath)
@@ -125,18 +128,17 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
       // os.move.into(tmpDir, workDir, replaceExisting = true, createFolders = true, atomicMove = true)
       if (os.exists(workDir)) os.remove.all(workDir)
       os.move(tmpDir, workDir, replaceExisting = true, createFolders = true, atomicMove = true)
-      println(s"Moving $tmpDir to $workDir")
     }
 
   }
 
   private lazy val simulator: DefaultSimulator = {
+
     val temporaryDirectory = System.getProperty("java.io.tmpdir")
     val className          = getClass.getName.stripSuffix("$")
-    //    val id = java.time.LocalDateTime.now()
-    //      .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss"))
-    val id = java.lang.management.ManagementFactory.getRuntimeMXBean.getName
-    _wantedWorkspacePath = Seq(temporaryDirectory, className, id).mkString("/")
-    new DefaultSimulator(_wantedWorkspacePath)
+    val id                 = java.lang.management.ManagementFactory.getRuntimeMXBean.getName
+
+    val tmpWorkspacePath = Seq(temporaryDirectory, className, id).mkString("/")
+    new DefaultSimulator(tmpWorkspacePath)
   }
 }

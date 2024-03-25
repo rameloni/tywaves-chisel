@@ -22,9 +22,9 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
           case firrtl.ir.BundleType(fields) => fields.map(f =>
               f.tpe match {
                 case firrtl.ir.GroundType(width) => width.serialize match {
-                  case widthPattern(width) => width.toInt
-                }
-                case _: firrtl.ir.AggregateType  => this.getWidth(f.tpe.asInstanceOf[AggregateT])
+                    case widthPattern(width) => width.toInt
+                  }
+                case _: firrtl.ir.AggregateType => this.getWidth(f.tpe.asInstanceOf[AggregateT])
               }
             // extract the number <width> from the GroundType
             ).sum
