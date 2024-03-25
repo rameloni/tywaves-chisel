@@ -25,7 +25,8 @@ package object hglddparser {
   /**
    * An object containing information about the hgl and hdl. This object stores
    * somehow a high level information like the hierarchy and the name used in
-   * Chisel. While the sig_name of value contains the hierarchy and verilog name.
+   * Chisel. While the sig_name of value contains the hierarchy and verilog
+   * name.
    *
    * @param kind
    *   The kind of object (e.g. struct, module, etc.)

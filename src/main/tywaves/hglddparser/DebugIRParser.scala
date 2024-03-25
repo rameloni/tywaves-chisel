@@ -96,15 +96,16 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
       scope match { case "root" => hglddObject.obj_name; case _ => hglddObject.obj_name.substring(scope.length + 1) }
     val elId =
       createId(fileInfo, hglddObject.hgl_loc, obj_name)
-
+    val parentModule =
+      hglddObject.obj_name.lastIndexOf("_") match { case -1 => "root"; case i => hglddObject.obj_name.substring(0, i) }
     // Parse the kind of the object
     hglddObject.kind match {
       case s @ "struct" =>
-        allElements.put(elId, (Name(obj_name, scope), Direction("Unknown"), Type(s)))
-        hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name))
+        allElements.put(elId, (Name(obj_name, scope, parentModule), Direction("Unknown"), Type(s)))
+        hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name, parentModule))
       case "module" =>
-        modules.put(elId, Name(obj_name, scope))
-        hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name))
+        modules.put(elId, Name(obj_name, scope, parentModule))
+        hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name, hglddObject.obj_name))
       case a =>
         println(s"Kind: $a not implemented")
         ???
@@ -119,12 +120,20 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
    * It collects all the [[Value.sig_name]]s from the value and add them to
    * [[signals]].
    */
-  private def parsePortVarFromModule(fileInfo: Seq[String], portVar: PortVar, scope: String): Unit = {
-    val elId  = createId(fileInfo, portVar.hgl_loc, portVar.var_name)
-    val name  = Name(portVar.var_name, scope)
-    val dir   = Direction("Unknown")
-    val typ   = Type(portVar.type_name)
-    val hwTyp = HardwareType(portVar.type_name)
+  private def parsePortVarFromModule(
+      fileInfo:     Seq[String],
+      portVar:      PortVar,
+      scope:        String,
+      parentModule: String,
+  ): Unit = {
+    val elId = createId(fileInfo, portVar.hgl_loc, portVar.var_name)
+    val name = Name(portVar.var_name, scope, parentModule)
+    val dir  = Direction("Unknown")
+    val typ  = Type(portVar.type_name)
+    val hwTyp = HardwareType(
+      portVar.type_name,
+      Some(portVar.packed_range.map(sizes => sizes.head - sizes.last + 1).getOrElse(1)),
+    )
 
     val sigNames =
       portVar.value match {

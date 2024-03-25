@@ -58,7 +58,7 @@ class CirceJsonParseTest extends AnyFlatSpec {
 
   it should "use circe with case classes" in {
     // Decoded: json -> case class
-    implicit val n:             Decoder[HGLDD]      = deriveDecoder[HGLDD]
+    implicit val n:             Decoder[HGLDD]        = deriveDecoder[HGLDD]
     implicit val nestedDecoder: Decoder[NestedObject] = deriveDecoder[NestedObject]
     implicit val jsonDecoder:   Decoder[CirceExample] = deriveDecoder[CirceExample]
 
@@ -66,9 +66,9 @@ class CirceJsonParseTest extends AnyFlatSpec {
 //    assert(decoded == Right(CirceExample("textContent", 123, booleanField = true, NestedObject(List(1, 2, 3)))))
 
     // Encoded: case class -> json
-    implicit val nestedEncoder: Encoder[NestedObject] = deriveEncoder[NestedObject]
-    implicit val myFieldEncoder: Encoder[HGLDD]     = deriveEncoder[HGLDD]
-    implicit val jsonEncoder:   Encoder[CirceExample] = deriveEncoder[CirceExample]
+    implicit val nestedEncoder:  Encoder[NestedObject] = deriveEncoder[NestedObject]
+    implicit val myFieldEncoder: Encoder[HGLDD]        = deriveEncoder[HGLDD]
+    implicit val jsonEncoder:    Encoder[CirceExample] = deriveEncoder[CirceExample]
     decoded match {
       case Right(decodedJson) =>
         val jsonObject: Json = decodedJson.asJson

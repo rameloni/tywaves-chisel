@@ -79,7 +79,7 @@ object GenerateHgldd {
    * the HGLDD is dumped.
    */
   def apply[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): String = {
-    val mapChiselToVcd = new MapChiselToVcd(generateModule, workingDir)
+    val mapChiselToVcd = new MapChiselToVcd(generateModule, workingDir)("TOP", "TbName", "DutName")
     mapChiselToVcd.dumpLog()
     TypedConverter.getDebugIRFile(gOpt = true)
   }

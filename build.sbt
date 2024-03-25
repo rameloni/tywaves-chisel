@@ -18,11 +18,12 @@ lazy val root = (project in file("."))
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
-    libraryDependencies += "org.chipsalliance" %% "chisel"        % chiselVersion,
-    libraryDependencies += "org.scalatest"     %% "scalatest"     % scalatestVersion % "test",
-    libraryDependencies += "io.circe"          %% "circe-core"    % circeVersion,
-    libraryDependencies += "io.circe"          %% "circe-generic" % circeVersion,
-    libraryDependencies += "io.circe"          %% "circe-parser"  % circeVersion,
+    libraryDependencies += "org.chipsalliance" %% "chisel"               % chiselVersion,
+    libraryDependencies += "org.scalatest"     %% "scalatest"            % scalatestVersion % "test",
+    libraryDependencies += "io.circe"          %% "circe-core"           % circeVersion,
+    libraryDependencies += "io.circe"          %% "circe-generic"        % circeVersion,
+    libraryDependencies += "io.circe"          %% "circe-generic-extras" % "0.14.3",
+    libraryDependencies += "io.circe"          %% "circe-parser"         % circeVersion,
 
     //    libraryDependencies += "nl.tudelft" %% "root" % "0.1.0",
     libraryDependencies += "edu.berkeley.cs" %% "chiseltest"  % "6.0.0",
