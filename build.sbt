@@ -6,6 +6,7 @@ Compile / scalaSource := baseDirectory.value / "src/main"
 
 Test / scalaSource := baseDirectory.value / "src/test"
 
+ThisBuild / organization := "com.github.rameloni"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.10"
 

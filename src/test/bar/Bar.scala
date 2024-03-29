@@ -1,65 +1,48 @@
 package bar
-//> using scala "2.13.12"
-//> using repository sonatype-s01:snapshots
-//> using lib "org.chipsalliance::chisel::6.0.0+74-0a437d8f-SNAPSHOT"
-//> using plugin "org.chipsalliance:::chisel-plugin::6.0.0+74-0a437d8f-SNAPSHOT"
-//> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
 
 import chisel3._
-import circt.stage.ChiselStage
+class Baz(n: Int) extends Bundle {
+  val a = UInt(n.W)
+  val b = UInt(n.W)
 
-class Baz extends Bundle {
-  val a = Flipped(UInt(2.W))
-  val b = Bool()
+  val nestedBundle = new Bundle {
+    val z = Bool()
+  }
 }
 
-class Bar extends RawModule {
-  val io = IO(new Baz)
-
-  io.b :<>= !io.a
-}
-
-class BarFoo extends Module {
-  val io  = IO(new Baz)
-  var tmp = Bool()
-  tmp = (io.a % 2.U == 0.U).asBool
-  val my_wire = Wire(Bool())
-  my_wire := io.a
-  dontTouch(my_wire)
-
-  val my = Wire(new Bundle {
-    val wire = Bool()
-    val x    = Bool()
+class Bar extends Module {
+  val io = IO(new Bundle {
+    val a   = Input(Bool())
+    val b   = Input(Bool())
+    val out = Output(Bool())
   })
-  // This provides a different output than the previous version
-  //  val my2 = new Bundle {
-  //    val wire = Wire(Bool())
-  //    val x    = Wire(Bool())
-  //  }
 
-  my.wire := io.a
-  my.x    := io.a
+  val inputSum  = IO(Input(new Baz(8)))
+  val outputSum = IO(Output(SInt(8.W)))
 
-  dontTouch(my.wire)
-  dontTouch(my.x)
-//  io_a :<= io.a
-//  dontTouch(io_a)
-  private val bar = Module(new Bar)
-  io :<>= bar.io
+  when(inputSum.nestedBundle.z === true.B) {
+    outputSum := inputSum.a.asSInt + inputSum.b.asSInt
+  }.otherwise {
+    outputSum := inputSum.a.asSInt - inputSum.b.asSInt
+  }
 
-//  io.b := io_a
+  val cable =
+    Wire(Bool()) // do not use reserved verilog words as val names (val wire) -> tywaves-demo does not work for them yet
+  cable  := io.a & io.b
+
+  io.out := cable
 }
-
 object MainBar extends App {
+  import circt.stage.ChiselStage
+
   println(
     ChiselStage.emitSystemVerilog(
-      new BarFoo,
+      new Bar,
       firtoolOpts = Array(
         "-O=debug",
         "-g",
         "-emit-hgldd",
         "-output-final-mlir=Fooa.mlir",
-//        "--emit-omir",
       ),
     )
   )
