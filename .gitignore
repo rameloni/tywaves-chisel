@@ -10,7 +10,6 @@
 
 # Scala project
 target/
-project/
 
 # Chiseltest run directory
 test_run_dir/

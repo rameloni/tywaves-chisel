@@ -6,6 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import tywaves.simulator.simSettings
 
 object RunFoo {
+  /** Run multiple times */
   def apply(c: => Foo): Unit = {
     // Inputs and expected results
     val a = Seq(0, 1, 0, 1)
@@ -36,24 +37,10 @@ class FooTest extends AnyFlatSpec {
   }
 
   it should "trace" in {
-    simulate(new Foo, Seq(simSettings.EnableTrace), simName = "trace") { c =>
+    simulate(new Foo, Seq(simSettings.EnableTrace, simSettings.LaunchTywavesWaveforms), simName = "trace") { c =>
       c.io.a.poke(true)
       c.io.b.poke(0)
     }
   }
 
-}
-
-class SimpleTest extends AnyFlatSpec {
-  behavior of "SimpleTest"
-  it should "trace simple bar" in {
-    simulate(
-      new Bar,
-      Seq(simSettings.EnableTraceWithUnderscore, simSettings.LaunchTywavesWaveforms),
-      simName = "trace_simple_bar",
-    ) { c =>
-      c.io.a.poke(true)
-      c.io.b.poke(false)
-    }
-  }
 }

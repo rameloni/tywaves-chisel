@@ -6,15 +6,13 @@ Compile / scalaSource := baseDirectory.value / "src/main"
 
 Test / scalaSource := baseDirectory.value / "src/test"
 
-Compile / doc / scalacOptions ++= Seq("-siteroot", "docs")
-
-ThisBuild / version := "0.1.0-SNAPSHOT"
-
+ThisBuild / organization := "com.github.rameloni"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.10"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "TyWaves-demo: backend Chisel-to-Vcd mapper",
+    name := "TyWaves-demo-backend",
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
@@ -24,10 +22,7 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.circe"          %% "circe-generic"        % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-generic-extras" % "0.14.3",
     libraryDependencies += "io.circe"          %% "circe-parser"         % circeVersion,
-
-    //    libraryDependencies += "nl.tudelft" %% "root" % "0.1.0",
-    libraryDependencies += "edu.berkeley.cs" %% "chiseltest"  % "6.0.0",
-    libraryDependencies += "nl.tudelft"      %% "tydi-chisel" % "0.1.6",
+    libraryDependencies += "edu.berkeley.cs"   %% "chiseltest"           % "6.0.0",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",

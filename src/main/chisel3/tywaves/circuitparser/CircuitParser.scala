@@ -26,8 +26,12 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
                   }
                 case _: firrtl.ir.AggregateType => this.getWidth(f.tpe.asInstanceOf[AggregateT])
               }
+
             // extract the number <width> from the GroundType
             ).sum
+          case firrtl.ir.VectorType(firrtl.ir.GroundType(width), size) => width.serialize match {
+              case widthPattern(width) => width.toInt * size
+            }
         }
 
       case chisel: chisel3.Record    => chisel.getWidth

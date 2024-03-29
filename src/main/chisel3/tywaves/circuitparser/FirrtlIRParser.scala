@@ -162,6 +162,16 @@ class FirrtlIRParser
           tpe,
           parentModule,
         )
+      case DefRegister(info, name, tpe, _) =>
+        //        allElements.put(elId, (Name(name, scope), Direction("no dir"), Type(tpe.toString)))
+        parseElement(
+          createId(info, Some(name)),
+          Name(name, scope, parentModule),
+          Direction("no dir"),
+          HardwareType("Register", None),
+          tpe,
+          parentModule,
+        )
 
       case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")
