@@ -1,8 +1,9 @@
 package tywaves.simulator
 
 import chisel3.RawModule
-import chisel3.simulator.withargs.SingleBackendSimulatorWithArgs
+import chisel3.simulator.SingleBackendSimulator
 import chisel3.simulator.PeekPokeAPI
+import com.typesafe.scalalogging.Logger
 import svsim._
 import tywaves.circuitmapper.MapChiselToVcd
 
@@ -50,7 +51,7 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
 
     // Cleanup the simulation after the execution
     simulator.cleanup()
-    println(_wantedWorkspacePath)
+
     val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = _wantedWorkspacePath)(
       topName = "TOP",
       tbScopeName = Workspace.testbenchModuleName,
@@ -100,14 +101,14 @@ object BetterEphemeralSimulator extends PeekPokeAPI {
     settings.foreach {
       case TraceVcd(_) => controller.setTraceEnabled(true)
       case _: Tywaves =>
-      case s => println(s"Unknown Controller Setting $s")
+      case s => Logger(getClass.getName).info(s"Unknown Controller Setting $s")
     }
 
   // Simulators: DefaultSimulators
-  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulatorWithArgs[verilator.Backend] {
-    val backend:     verilator.Backend = verilator.Backend.initializeFromProcessEnvironment()
-    val tag:         String            = "default"
-    val firtoolArgs: Seq[String]       = Seq("-g", "--emit-hgldd")
+  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
+    val backend:              verilator.Backend = verilator.Backend.initializeFromProcessEnvironment()
+    val tag:                  String            = "default"
+    override val firtoolArgs: Seq[String]       = Seq("-g", "--emit-hgldd")
 
     val backendSpecificCompilationSettings: verilator.Backend.CompilationSettings = _backendCompileSettings
     val commonCompilationSettings: CommonCompilationSettings =

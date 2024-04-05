@@ -1,6 +1,7 @@
 package tywaves.hglddparser
 
 import chisel3.RawModule
+import com.typesafe.scalalogging.Logger
 import io.circe.generic.auto._
 import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type, VerilogSignals}
 import tywaves.hglddparser
@@ -10,6 +11,8 @@ import scala.io.Source
 class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
   def this() = this("workingDir", "ddFilePath")
+
+  private val logger = Logger(getClass.getName)
 
   val hierarchySeparator = "_"
 
@@ -68,7 +71,7 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
    */
   def parse(): Unit = {
     val hgldd = parseFile(ddFilePath)
-    println("DebugIRParser: parse. hgldd: " + hgldd)
+    logger.debug("DebugIRParser: parse. hgldd: " + hgldd)
     val (fileInfo, hdlFileActualIndex) = (hgldd.HGLDD.file_info, hgldd.HGLDD.hdl_file_index - 1)
     val (hglFilePath, hdlFilePath)     = (fileInfo.head, workingDir + "/" + fileInfo(hdlFileActualIndex))
 
@@ -107,7 +110,7 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
         modules.put(elId, Name(obj_name, scope, parentModule))
         hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name, hglddObject.obj_name))
       case a =>
-        println(s"Kind: $a not implemented")
+        logger.error(s"Kind: $a not implemented")
         ???
     }
 
@@ -184,8 +187,8 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
                 // Now the sig_names contains verilog names
                 signals.putOrReplace(elId, (name, dir, hwType, typ, VerilogSignals(Seq(newSigName)))) match {
                   case None => // It is a new value, that means the something changed
-                    Console.err.println(s"Info: The signal $elId was not found in the signals list.")
-                    Console.err.println("Removed: " + signals.remove(_elId)) // Remove the old value
+                    logger.debug(s"Info: The signal $elId was not found in the signals list.")
+                    logger.debug("Removed: " + signals.remove(_elId)) // Remove the old value
                   case Some(_) => ()
                 }
             }

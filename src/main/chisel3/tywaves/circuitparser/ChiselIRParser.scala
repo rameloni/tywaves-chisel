@@ -3,11 +3,15 @@ package chisel3.tywaves.circuitparser
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine}
 import chisel3.internal.firrtl.{ir => chiselIR}
 import chisel3.{Aggregate, Bundle, Data, Vec}
+import com.typesafe.scalalogging.Logger
 import tywaves.utils.UniqueHashMap
 import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type, tywaves_symbol_table}
 
 class ChiselIRParser
     extends CircuitParser[chiselIR.Circuit, chiselIR.Component, chiselIR.Port, Aggregate, Data, chiselIR.Command] {
+
+  private val logger = Logger(getClass.getName)
+
   // Collection of all modules in the circuit
   override lazy val modules        = new UniqueHashMap[ElId, (Name, chiselIR.Component)]()
   override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, chiselIR.Port*/ )]()
@@ -33,12 +37,12 @@ class ChiselIRParser
 
     // Parse the internals of the module
     chiselComponent match {
-      case chiselIR.DefModule(_, moduleName, ports, body) =>
+      case chiselIR.DefModule(_, moduleName, _, _, ports, body) =>
         ports.foreach(parsePort(name, _, moduleName))
         // TODO: Parse the body:
         body.foreach(parseBodyStatement(name, _, moduleName))
       case chiselIR.DefBlackBox(_, name, ports, topDir, params) =>
-        println(s"DefBlackBox: name: $name, ports: $ports, topDir: $topDir, params: $params")
+        logger.debug(s"DefBlackBox: name: $name, ports: $ports, topDir: $topDir, params: $params")
 
       case _ => throw new Exception(s"Failed to parse module $name. Unknown type.")
     }
@@ -76,7 +80,6 @@ class ChiselIRParser
     portData match {
       case agg: Aggregate =>
         // TODO: check this
-        println(s"AggregateType: $agg")
         parseAggregate(
           elId,
           Name(name, scope, parentModule),
@@ -120,7 +123,6 @@ class ChiselIRParser
       case b: Bundle =>
         b.elements.foreach { case (fieldName, dataType) =>
           parseElement(elId, Name(fieldName, name.name, parentModule), dir, hwType, dataType, parentModule)
-          println(s"AggregateType: $aggrType, dir: $dir, hwType: $hwType, name: $name")
 
           val variable = tywaves_symbol_table.Variable(
             name.name,
@@ -175,15 +177,15 @@ class ChiselIRParser
       case chiselIR.DefRegInit(sourceInfo, dataType, _, _, _) =>
         Some((sourceInfo, dataType, HardwareType("Register", Some(dataType.getWidth))))
 
-      case _: chiselIR.Connect      => Console.err.println("ChiselIRParser: Parsing Connect. Skip."); None
-      case _: chiselIR.DefPrim[?]   => Console.err.println("ChiselIRParser: Parsing DefPrim. Skip."); None
-      case _: chiselIR.WhenBegin    => Console.err.println("ChiselIRParser: Parsing WhenBegin. Skip."); None
-      case _: chiselIR.WhenEnd      => Console.err.println("ChiselIRParser: Parsing WhenEnd. Skip."); None
-      case _: chiselIR.Printf       => Console.err.println("ChiselIRParser: Parsing Printf. Skip."); None
-      case _: chiselIR.AltBegin     => Console.err.println("ChiselIRParser: Parsing AltBegin. Skip."); None
-      case _: chiselIR.OtherwiseEnd => Console.err.println("ChiselIRParser: Parsing OtherwiseEnd. Skip."); None
+      case _: chiselIR.Connect      => logger.debug("ChiselIRParser: Parsing Connect. Skip."); None
+      case _: chiselIR.DefPrim[?]   => logger.debug("ChiselIRParser: Parsing DefPrim. Skip."); None
+      case _: chiselIR.WhenBegin    => logger.debug("ChiselIRParser: Parsing WhenBegin. Skip."); None
+      case _: chiselIR.WhenEnd      => logger.debug("ChiselIRParser: Parsing WhenEnd. Skip."); None
+      case _: chiselIR.Printf       => logger.debug("ChiselIRParser: Parsing Printf. Skip."); None
+      case _: chiselIR.AltBegin     => logger.debug("ChiselIRParser: Parsing AltBegin. Skip."); None
+      case _: chiselIR.OtherwiseEnd => logger.debug("ChiselIRParser: Parsing OtherwiseEnd. Skip."); None
       case a =>
-        println(s"a a a: $a")
+        logger.error(s"Match case not covered: $a")
         None
         ???
     }
@@ -209,7 +211,7 @@ class ChiselIRParser
   def createId(info: SourceInfo, specialPort: Option[String] = None): ElId =
     info match {
       case _: NoSourceInfo =>
-        println(Console.RED + "Warning: Bad ID NoSourceInfo" + Console.RESET)
+        logger.debug("Warning: Bad ID NoSourceInfo")
         ElId(specialPort.getOrElse("NoInfo"), 0, 0)
       case SourceLine(source, row, col) =>
         ElId(source, row, col, specialPort.getOrElse(""))

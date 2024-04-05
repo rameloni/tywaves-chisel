@@ -1,4 +1,4 @@
-val chiselVersion    = "6.1.0"
+val chiselVersion    = "6.1.0-tywaves-SNAPSHOT"
 val scalatestVersion = "3.2.16"
 val circeVersion     = "0.14.6"
 
@@ -8,7 +8,9 @@ Test / scalaSource := baseDirectory.value / "src/test"
 
 ThisBuild / organization := "com.github.rameloni"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.13.10"
+ThisBuild / scalaVersion := "2.13.12"
+
+enablePlugins(ScalafmtPlugin)
 
 lazy val root = (project in file("."))
   .settings(
@@ -22,7 +24,12 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.circe"          %% "circe-generic"        % circeVersion,
     libraryDependencies += "io.circe"          %% "circe-generic-extras" % "0.14.3",
     libraryDependencies += "io.circe"          %% "circe-parser"         % circeVersion,
-    libraryDependencies += "edu.berkeley.cs"   %% "chiseltest"           % "6.0.0",
+
+    libraryDependencies ++= Seq(
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+      "ch.qos.logback" % "logback-classic" % "1.3.5"
+    ),
+
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",

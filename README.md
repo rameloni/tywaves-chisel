@@ -53,6 +53,7 @@ The frontend will be installed as `surfer-tywaves` executable.
 ## Publish locally this scala project
 
 ```bash
+make install-chisel-fork
 make install-tywaves-backend
 ```
 

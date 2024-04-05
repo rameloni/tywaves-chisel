@@ -3,6 +3,7 @@ package tywaves.circuitmapper
 import chisel3.RawModule
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.tywaves.circuitparser.{ChiselIRParser, FirrtlIRParser}
+import com.typesafe.scalalogging.Logger
 import firrtl.stage.FirrtlCircuitAnnotation
 import tywaves.hglddparser.DebugIRParser
 import tywaves.utils.UniqueHashMap
@@ -20,6 +21,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     tbScopeName: String,
     dutName:     String,
 ) {
+  private val logger = Logger(getClass.getName)
 
   private val logSubDir = s"$workingDir/tywaves-log"
   val tywavesStatePath  = s"$logSubDir/tywavesState.json"
@@ -185,7 +187,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
           case (ir, Some(value)) =>
             Some((findChildVariable(elId, value, ir), findChildScopes(value)))
           case (ir, None) =>
-            println(s"IR without match: $ir", None)
+            logger.debug(s"IR without match: $ir", None)
             None
         }.filter { case (variableOpt, _) => variableOpt.isDefined }
           .map { case (variableOpt, scopes) => (variableOpt.get, scopes) }
