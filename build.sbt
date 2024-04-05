@@ -2,9 +2,9 @@ val chiselVersion    = "6.1.0-tywaves-SNAPSHOT"
 val scalatestVersion = "3.2.16"
 val circeVersion     = "0.14.6"
 
-Compile / scalaSource := baseDirectory.value / "src/main"
+Compile / scalaSource := baseDirectory.value / "src/main/scala"
 
-Test / scalaSource := baseDirectory.value / "src/test"
+Test / scalaSource := baseDirectory.value / "src/test/scala"
 
 ThisBuild / organization := "com.github.rameloni"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
 
     libraryDependencies ++= Seq(
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-      "ch.qos.logback" % "logback-classic" % "1.3.5"
+      "ch.qos.logback" % "logback-classic" % "1.4.14"
     ),
 
     scalacOptions ++= Seq(
