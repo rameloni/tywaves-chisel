@@ -20,7 +20,6 @@ private[tywaves] object TywavesInterface {
     }
     val cmd = Seq(program, vcdPath) ++ chiselStateCmd ++ chiselState
 
-    println(s"Executing: ${cmd.mkString(" ")}")
     // Execute and return to the caller
     val process = new ProcessBuilder(cmd: _*).inheritIO().start()
     // No wait for the process to finish

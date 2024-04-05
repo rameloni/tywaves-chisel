@@ -1,8 +1,9 @@
 package chisel3.tywaves.circuitparser
 
+import com.typesafe.scalalogging.Logger
 import firrtl.{ir => firrtlIR}
 import tywaves.utils.UniqueHashMap
-import tywaves.circuitmapper.{ElId, Name, Direction, Type, HardwareType}
+import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type}
 
 class FirrtlIRParser
     extends CircuitParser[
@@ -13,6 +14,9 @@ class FirrtlIRParser
       firrtlIR.Type,
       firrtlIR.Statement,
     ] {
+
+  private val logger = Logger(getClass.getName)
+
   // Collection of all modules in the circuit
   override lazy val modules        = new UniqueHashMap[ElId, (Name, firrtlIR.DefModule)]()
   override lazy val ports          = new UniqueHashMap[ElId, (Name, Direction, Type /*, firrtlIR.Port*/ )]()
@@ -33,12 +37,12 @@ class FirrtlIRParser
 
     // Parse the internals of the module
     firrtlModule match {
-      case firrtlIR.Module(_, moduleName, ports, body) =>
+      case firrtlIR.Module(_, moduleName, _, _, ports, body) =>
         ports.foreach(parsePort(name, _, moduleName))
         // TODO: Parse the body:
         parseBodyStatement(name, body, moduleName)
       case firrtlIR.ExtModule(_, name, ports, defname, params) =>
-        println(s"ExtModule: name: $name, ports: $ports, defname: $defname, params: $params")
+        logger.debug(s"ExtModule: name: $name, ports: $ports, defname: $defname, params: $params")
 
       case _ => throw new Exception(s"Failed to parse module $name. Unknown type.")
     }
@@ -58,7 +62,6 @@ class FirrtlIRParser
     // Parse the type to build flattened ports
     firrtlType match {
       case agg: firrtlIR.AggregateType =>
-        println(s"AggregateType: $agg")
         parseAggregate(
           elId,
           Name(name, scope, parentModule),
@@ -173,11 +176,11 @@ class FirrtlIRParser
           parentModule,
         )
 
-      case _: Connect       => Console.err.println("FirrtlIR parser: Parsing Connect. Skip.")
-      case _: DefNode       => Console.err.println("FirrtlIR parser: Parsing DefNode. Skip.")
-      case _: Conditionally => Console.err.println("FirrtlIR parser: Parsing Conditionally. Skip.")
+      case _: Connect       => logger.debug("FirrtlIR parser: Parsing Connect. Skip.")
+      case _: DefNode       => logger.debug("FirrtlIR parser: Parsing DefNode. Skip.")
+      case _: Conditionally => logger.debug("FirrtlIR parser: Parsing Conditionally. Skip.")
       case a => // TODO: other cases to be implemented
-        println("aaa: " + a)
+        logger.error(s"Match case not covered: $a")
         ???
     }
   }
@@ -188,7 +191,7 @@ class FirrtlIRParser
   def createId(info: firrtlIR.Info, specialPort: Option[String] = None): ElId =
     info match {
       case firrtlIR.NoInfo =>
-        println(Console.RED + "Warning: Bad ID NoInfo" + Console.RESET)
+        logger.debug("Warning: Bad ID NoInfo")
         ElId(specialPort.getOrElse("NoInfo"), 0, 0)
       case f: firrtlIR.FileInfo =>
         val (source, row, col) = f.split

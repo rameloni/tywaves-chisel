@@ -15,7 +15,6 @@ class MyBundle extends Simple {
   }
 }
 
-
 class Foo extends Module {
   val x    = IO(Input(Bool()))
   val s    = IO(Input(new MyBundle))
@@ -27,11 +26,11 @@ class Foo extends Module {
     val out = Output(UInt(8.W))
   })
 
-  val vec = VecInit(Seq.fill(4)(0.U(8.W)))
-//  val reg = RegInit(0.U(8.W))
+  //  val vec = VecInit(Seq.fill(4)(0.U(8.W)))
+  //  val reg = RegInit(0.U(8.W))
 
   dontTouch(io_a)
-  dontTouch(vec)
+  //  dontTouch(vec)
 
   io_a   := 1.U
   io.out := io.a + io.b
