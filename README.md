@@ -78,8 +78,8 @@ The following example shows how it is possible also to:
 - Use tywaves and expect API to test the circuit
 
 ```scala
-import tywaves.simulator.BetterEphemeralSimulator._
-import tywaves.simulator.simSettings
+import tywaves.simulator.TywavesSimulator._
+import tywaves.simulator.simulatorSettings._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class BarTest extends AnyFlatSpec {
@@ -87,7 +87,7 @@ class BarTest extends AnyFlatSpec {
   it should "trace simple bar" in {
     simulate(
       new Bar,
-      Seq(simSettings.EnableTraceWithUnderscore, simSettings.LaunchTywavesWaveforms),
+      Seq(VcdTrace, LaunchTywavesWaveforms),
       simName = "trace_simple_bar",
     ) { c =>
       c.io.a.poke(true)
@@ -123,7 +123,7 @@ class GCD extends Module {
 
   when(x > y)(x := x -% y).otherwise(y := y -% x)
   when(io.loadValues) {
-    x := io.a;
+    x := io.a
     y := io.b
   }
   io.result := x

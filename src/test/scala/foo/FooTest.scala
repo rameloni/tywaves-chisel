@@ -1,9 +1,9 @@
 package foo
 
 // The high level simulation API: it uses svsim internally
-import tywaves.simulator.BetterEphemeralSimulator._
+import tywaves.simulator.ParametricSimulator._
 import org.scalatest.flatspec.AnyFlatSpec
-import tywaves.simulator.simSettings
+import tywaves.simulator.simulatorSettings._
 
 object RunFoo {
   /** Run multiple times */
@@ -30,14 +30,14 @@ class FooTest extends AnyFlatSpec {
 
   it should "trace with underscore" in {
     // val testName = testNames.headOption.getOrElse("Unknown Test")
-    simulate(new Foo, Seq(simSettings.EnableTraceWithUnderscore), simName = "trace_with_underscore") {
+    simulate(new Foo, Seq(VcdTraceWithUnderscore), simName = "trace_with_underscore") {
       println("Running test: " + it)
       RunFoo(_)
     }
   }
 
   it should "trace" in {
-    simulate(new Foo, Seq(simSettings.EnableTrace, simSettings.LaunchTywavesWaveforms), simName = "trace") { c =>
+    simulate(new Foo, Seq(VcdTrace), simName = "trace") { c =>
       c.io.a.poke(true)
       c.io.b.poke(0)
     }

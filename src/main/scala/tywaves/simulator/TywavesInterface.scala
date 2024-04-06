@@ -4,7 +4,7 @@ private[tywaves] object TywavesInterface {
 
   private val program = "surfer-tywaves"
 
-  def apply(vcdPath: String, chiselState: Option[String]): Unit = {
+  def run(vcdPath: String, chiselState: Option[String]): Unit = {
     {
       import scala.sys.process._
 
