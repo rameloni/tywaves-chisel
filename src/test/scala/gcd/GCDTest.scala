@@ -28,15 +28,16 @@ class GCDTest extends AnyFunSpec with Matchers {
     it("runs GCD correctly") {
       import TywavesSimulator._
 
-      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true))) { gcd =>
-        gcd.io.a.poke(24.U)
-        gcd.io.b.poke(36.U)
-        gcd.io.loadValues.poke(1.B)
-        gcd.clock.step()
-        gcd.io.loadValues.poke(0.B)
-        gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
-        gcd.io.resultIsValid.expect(true.B)
-        gcd.io.result.expect(12)
+      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_GCD_correctly_launch_tywaves") {
+        gcd =>
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(36.U)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
+          gcd.io.resultIsValid.expect(true.B)
+          gcd.io.result.expect(12)
       }
     }
   }
