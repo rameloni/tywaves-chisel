@@ -3,14 +3,15 @@ package gcd
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 
-import tywaves.simulator.BetterEphemeralSimulator._
-import tywaves.simulator.simSettings
-
+import tywaves.simulator._
+import tywaves.simulator.ParametricSimulator._
+import tywaves.simulator.simulatorSettings._
 import chisel3._
+//import chisel3._
 class GCDTest extends AnyFunSpec with Matchers {
-  describe("EphemeralSimulator") {
+  describe("ParametricSimulator") {
     it("runs GCD correctly") {
-      simulate(new GCD(), Seq(simSettings.EnableTrace, simSettings.LaunchTywavesWaveforms)) { gcd =>
+      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("aaa"))) { gcd =>
         gcd.io.a.poke(24.U)
         gcd.io.b.poke(36.U)
         gcd.io.loadValues.poke(1.B)
@@ -22,4 +23,23 @@ class GCDTest extends AnyFunSpec with Matchers {
       }
     }
   }
+
+  describe("TywavesSimulator") {
+    it("runs GCD correctly") {
+      import TywavesSimulator._
+
+      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_GCD_correctly_launch_tywaves") {
+        gcd =>
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(36.U)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
+          gcd.io.resultIsValid.expect(true.B)
+          gcd.io.result.expect(12)
+      }
+    }
+  }
+
 }

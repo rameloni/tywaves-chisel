@@ -37,9 +37,9 @@ discovered [here](https://github.com/rameloni/Tydi-Chisel-testing-frameworks-ana
 
 # Installation
 
-You can run `make all` to install all the pre-requisites.
+You can run `make all` to install all the pre-requisites and **this library**.
 
-## Install [surfer-tywaves-demo](https://gitlab.com/rameloni/surfer-tywaves-demo/-/tree/tywaves)
+## Prerequisite: Install [surfer-tywaves-demo](https://gitlab.com/rameloni/surfer-tywaves-demo/-/tree/tywaves)
 
 The makefile contains a rule to clone the frontend repository, build and install it.
 
@@ -50,54 +50,94 @@ make clean # To remove the cloned repository
 
 The frontend will be installed as `surfer-tywaves` executable.
 
-## Publish locally this scala project
+## Install and publish locally this library
 
 ```bash
-make install-chisel-fork
+make install-chisel-fork # TEMPORARY NEEDED: Install the chisel fork with the needed changes in the development branch
 make install-tywaves-backend
 ```
 
 Once published locally, the `tywaves-demo-backend` can be used by adding the following line to the `build.sbt` file:
 
 ```scala
-libraryDependencies += "com.github.rameloni" %% "tywaves-backend" % "0.1.0-SNAPSHOT"
+libraryDependencies += "com.github.rameloni" %% "tywaves-demo-backend" % "0.1.0-SNAPSHOT"
 ```
 
 # Use it on your project
 
-The `TywavesBackend` provides a [simulator](./src/main/tywaves/simulator/BetterEphemeralSimulator.scala) with
-functionalities to simulate a circuit through [svsim](https://github.com/chipsalliance/chisel/tree/main/svsim), emit VCD
-traces and of course generate the symbol table for the waveform viewer itself automatically.
+The `TywavesBackend` provides 2 simulators with functionalities to simulate a circuit
+through [svsim](https://github.com/chipsalliance/chisel/tree/main/svsim), emit VCD
+traces and of course generate the symbol table for the waveform viewer itself automatically:
+
+- [ParametricSimulator](./src/main/scala/tywaves/simulator/ParametricSimulator.scala): provides some generic features
+  such as VCD trace emission, name the trace file, pass additional arguments to firtool before simulation, save the
+  workspace of svsim
+- [TywavesSimulator](./src/main/scala/tywaves/simulator/TywavesSimulator.scala): it extends the parametric simulator in
+  order to generate the symbol table for Tywaves waveform viewer and provides an option to launch the waveform viewer
+  after the simulation
+
+> While `TywavesSimulator` is central part of the Tywaves project and its functionalities are not fully supported
+> yet, `ParametricSimulator` is
+> should be able to simulate any Chisel circuit. In case you need to simulate a circuit that is not supported
+> by `TywavesSimulator`, you can use `ParametricSimulator`.
+>
+> If you want to try the functionalities of `Tywaves` then `TywavesSimulator` is the right choice.
+> But, if you want to visualize waveforms of any chisel circuit without issues related to features not supported yet,
+> you should make use of `ParametricSimulator`.
 
 The following example shows how it is possible also to:
 
 - Enable the trace of the simulation
-- Launch the waveform viewer after the simulation
 - Set the name of the simulation (it will be used to create a folder with a user defined name for the traces and
   workspace of svsim)
+- Launch the waveform viewer after the simulation
 - Use tywaves and expect API to test the circuit
+### Use TywavesSimulator
 
 ```scala
-import tywaves.simulator.BetterEphemeralSimulator._
-import tywaves.simulator.simSettings
+import tywaves.simulator.TywavesSimulator._
+import tywaves.simulator.simulatorSettings._
 import org.scalatest.flatspec.AnyFlatSpec
 
-class BarTest extends AnyFlatSpec {
-  behavior of "BarTest"
-  it should "trace simple bar" in {
-    simulate(
-      new Bar,
-      Seq(simSettings.EnableTraceWithUnderscore, simSettings.LaunchTywavesWaveforms),
-      simName = "trace_simple_bar",
-    ) { c =>
-      c.io.a.poke(true)
-      c.io.b.poke(false)
-      c.io.out.expect(false.B)
-      c.clock.step()
-      c.io.a.poke(true)
-      c.io.b.poke(true)
-      c.io.out.expect(true.B)
-      c.clock.step()
+class GCDTest extends AnyFunSpec with Matchers {
+  describe("TywavesSimulator") {
+    it("runs GCD correctly") {
+      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_GCD_correctly_launch_tywaves") {
+        gcd =>
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(36.U)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
+          gcd.io.resultIsValid.expect(true.B)
+          gcd.io.result.expect(12)
+      }
+    }
+  }
+}
+```
+
+### Use ParametricSimulator
+```scala
+import tywaves.simulator.ParametricSimulator._
+import tywaves.simulator.simulatorSettings._
+import org.scalatest.flatspec.AnyFlatSpec
+
+class GCDTest extends AnyFunSpec with Matchers {
+  describe("ParametricSimulator") {
+    it("runs GCD correctly") {
+      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("GCD_parametricSimulator_workdir")), simName = "runs_GCD_correctly") {
+        gcd =>
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(36.U)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
+          gcd.io.resultIsValid.expect(true.B)
+          gcd.io.result.expect(12)
+      }
     }
   }
 }
@@ -105,7 +145,7 @@ class BarTest extends AnyFlatSpec {
 
 # Example output
 
-The following images show the classic and tywaves waveform visualization of the [GCD](./src/test/gcd/GCD.scala) module.
+The following images show the classic and tywaves waveform visualization of the [GCD](./src/test/scala/gcd/GCD.scala) module.
 It is possible to see that the left picture does not provide any information about Chisel level types and hierarchy.
 
 ```scala
@@ -123,7 +163,7 @@ class GCD extends Module {
 
   when(x > y)(x := x -% y).otherwise(y := y -% x)
   when(io.loadValues) {
-    x := io.a;
+    x := io.a
     y := io.b
   }
   io.result := x
@@ -139,7 +179,6 @@ class GCD extends Module {
 
 - [x] Parse and map Chisel/FIRRTL/Verilog circuits
 - [x] Emit VCD traces from the simulator (both with and without underscores in the signal names)
-- [x] 
 - [x] Automatically generate the symbol table for the waveform viewer
     - [x] Dump Chisel types in the final symbol table
     - [x] Represent hierarchical structures of bundles
