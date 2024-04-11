@@ -175,7 +175,9 @@ class FirrtlIRParser
           tpe,
           parentModule,
         )
-
+      case DefInstance(info, name, module, tpe) => {
+        logger.error(s"DefInstance: name: $name, module: $module, tpe: $tpe. Skip.")
+      }
       case _: Connect       => logger.debug("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => logger.debug("FirrtlIR parser: Parsing DefNode. Skip.")
       case _: Conditionally => logger.debug("FirrtlIR parser: Parsing Conditionally. Skip.")

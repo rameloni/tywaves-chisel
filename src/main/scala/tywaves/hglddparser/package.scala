@@ -45,7 +45,7 @@ package object hglddparser {
       port_vars:   Seq[PortVar],
       module_name: Option[String],
       hdl_loc:     Option[HdlLocation],
-      children:    Option[Seq[Children]],
+      children:    Option[Seq[Child]],
   )
 
   case class HglLocation(
@@ -92,6 +92,7 @@ package object hglddparser {
       opcode:     Option[String],
       operands:   Option[Seq[Value]],
   )
-  case class Children()
+
+  case class Child(name: String, obj_name: String, module_name: String, hgl_loc: HglLocation, hdl_loc: HdlLocation)
 
 }

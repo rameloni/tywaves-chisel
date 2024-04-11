@@ -184,6 +184,13 @@ class ChiselIRParser
       case _: chiselIR.Printf       => logger.debug("ChiselIRParser: Parsing Printf. Skip."); None
       case _: chiselIR.AltBegin     => logger.debug("ChiselIRParser: Parsing AltBegin. Skip."); None
       case _: chiselIR.OtherwiseEnd => logger.debug("ChiselIRParser: Parsing OtherwiseEnd. Skip."); None
+      case chiselIR.DefInstance(sourceInfo, module, _ports) => {
+        val elId = this.createId(sourceInfo, Some(module.name))
+//        _ports.foreach(parsePort(module.name, _, module.name))
+        modules.put(elId, (Name(module.name, scope, parentModule), null)) // Add the module and its name
+        logger.error(s"DefInstance not implemented: $module. Skip.")
+        None
+      }
       case a =>
         logger.error(s"Match case not covered: $a")
         None

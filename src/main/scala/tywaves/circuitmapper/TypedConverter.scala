@@ -56,13 +56,13 @@ private object TypedConverter {
   }
 
   /** Get the name of the debug file */
-  def getDebugIRFile(gOpt: Boolean): String = {
+  def getDebugIRFile(gOpt: Boolean, topModuleName: String): String = {
 
     def getFile(_workingDir: String): String = {
       val workingDir = new java.io.File(_workingDir)
       // Open the HGLDD file and extract the information
       if (workingDir.exists() && workingDir.isDirectory) {
-        workingDir.listFiles().filter(_.getName.endsWith(debugFileExt)).head.getAbsolutePath
+        workingDir.listFiles().filter(_.getName == topModuleName + debugFileExt).head.getAbsolutePath
       } else
         throw new Exception(s"WorkingDir: $workingDir does not exist or is not a directory.")
     }
@@ -81,6 +81,6 @@ object GenerateHgldd {
   def apply[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): String = {
     val mapChiselToVcd = new MapChiselToVcd(generateModule, workingDir)("TOP", "TbName", "DutName")
     mapChiselToVcd.dumpLog()
-    TypedConverter.getDebugIRFile(gOpt = true)
+    TypedConverter.getDebugIRFile(gOpt = true, generateModule.toString())
   }
 }

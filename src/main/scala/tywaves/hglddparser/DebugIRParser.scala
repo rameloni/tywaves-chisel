@@ -90,17 +90,30 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
   }
 
   /** Parse an object from the HGLDD representation */
-  private def parseObject(fileInfo: Seq[String], hglddObject: HglddObject): Unit = {
+  private def parseObject(
+      fileInfo:            Seq[String],
+      hglddObject:         HglddObject,
+      thisChildParentName: Option[String] = None,
+      thisChildName:       Option[String] = None,
+  ): Unit = {
 
     val scope =
-      hglddObject.obj_name.lastIndexOf("_") match { case -1 => "root"; case i => hglddObject.obj_name.substring(0, i) }
+      hglddObject.obj_name.lastIndexOf("_") match {
+        case -1 => thisChildName.getOrElse("root"); case i => hglddObject.obj_name.substring(0, i)
+      }
     // Drop the scope from the object name
     val obj_name =
-      scope match { case "root" => hglddObject.obj_name; case _ => hglddObject.obj_name.substring(scope.length + 1) }
+      if (scope == thisChildName.getOrElse("root"))
+        hglddObject.obj_name
+      else
+        hglddObject.obj_name.substring(scope.length + 1)
+
     val elId =
       createId(fileInfo, hglddObject.hgl_loc, obj_name)
     val parentModule =
-      hglddObject.obj_name.lastIndexOf("_") match { case -1 => "root"; case i => hglddObject.obj_name.substring(0, i) }
+      hglddObject.obj_name.lastIndexOf("_") match {
+        case -1 => thisChildParentName.getOrElse("root"); case i => hglddObject.obj_name.substring(0, i)
+      }
     // Parse the kind of the object
     hglddObject.kind match {
       case s @ "struct" =>
@@ -114,6 +127,31 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
         ???
     }
 
+    hglddObject.children match {
+      case Some(children) =>
+        children.foreach(parseChild(_, hglddObject.obj_name))
+      case None => ()
+    }
+
+  }
+
+  def parseChild(child: Child, parentModuleName: String): Unit = {
+    val childPath = ddFilePath.substring(0, ddFilePath.lastIndexOf("/")) + "/" + child.module_name + ".dd"
+    val hgldd     = parseFile(childPath)
+    val (fileInfo, hdlFileActualIndex) = (hgldd.HGLDD.file_info, hgldd.HGLDD.hdl_file_index - 1)
+
+    hgldd.objects.foreach(
+      parseObject(
+        fileInfo.map(f =>
+          f.replaceAll("\\.\\./", "")
+        ), // Use the same of the other parsers (ChiselIR and FIRRTL IR) TODO: needs better version
+        _,
+        thisChildParentName = Some(parentModuleName),
+        thisChildName = Some(child.name),
+      )
+    )
+
+//    ???
   }
 
   /**
