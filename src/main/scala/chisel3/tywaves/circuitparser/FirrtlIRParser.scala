@@ -31,7 +31,7 @@ class FirrtlIRParser
   override def parseModule(firrtlModule: firrtlIR.DefModule): Unit = {
     // Parse generic info and create an ID for the module
     val (name, info) = (firrtlModule.name, firrtlModule.info)
-    val elId         = this.createId(info)
+    val elId         = this.createId(info, Some(name))
 
     modules.put(elId, (Name(name, "root", "root"), firrtlModule)) // Add the module and its name
 
@@ -52,7 +52,7 @@ class FirrtlIRParser
   override def parsePort(scope: String, port: firrtlIR.Port, parentModule: String): Unit = {
     // Parse generic info and create an ID for the port
     val (name, info, dir, firrtlType) = (port.name, port.info, port.direction, port.tpe)
-    val elId                          = this.createId(info, Some(name))
+    val elId                          = this.createId(info, Some(name + scope))
 
     ports.put(
       elId,
@@ -133,8 +133,8 @@ class FirrtlIRParser
       case ClockType | AsyncResetType | ResetType |
           UIntType(_) | SIntType(_) | AnalogType(_) =>
         if (hwType == HardwareType("Port", None))
-          flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(firrtlType.toString)))
-        allElements.put(elId.addName(name.name), (name, dir, Type(firrtlType.toString)))
+          flattenedPorts.put(elId.addName(name.name + parentModule), (name, dir, hwType, Type(firrtlType.toString)))
+        allElements.put(elId.addName(name.name + parentModule), (name, dir, Type(firrtlType.toString)))
       case _ => throw new Exception(s"Failed to parse type $firrtlType. Unknown type.")
     }
   }
@@ -175,7 +175,9 @@ class FirrtlIRParser
           tpe,
           parentModule,
         )
-
+      case DefInstance(info, name, module, tpe) => {
+        logger.error(s"DefInstance: name: $name, module: $module, tpe: $tpe. Skip.")
+      }
       case _: Connect       => logger.debug("FirrtlIR parser: Parsing Connect. Skip.")
       case _: DefNode       => logger.debug("FirrtlIR parser: Parsing DefNode. Skip.")
       case _: Conditionally => logger.debug("FirrtlIR parser: Parsing Conditionally. Skip.")

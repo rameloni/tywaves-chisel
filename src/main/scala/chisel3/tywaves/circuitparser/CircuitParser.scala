@@ -52,13 +52,14 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
       case chisel: chisel3.Record          => chisel.className
       case aggr:   chisel3.Aggregate       => aggr.typeName
     }
-    if (hwType == HardwareType("Port", Some(this.getWidth(agg))))
+    if (hwType == HardwareType("Port", Some(this.getWidth(agg)))) {
       flattenedPorts.put(
-        elId.addName(name.name),
+        elId.addName(name.name + parentModule),
         (name.addTywaveScope(parentModule), dir, hwType, Type(aggString)),
       )
+    }
 
-    allElements.put(elId.addName(name.name), (name.addTywaveScope(parentModule), dir, Type(aggString)))
+    allElements.put(elId.addName(name.name + parentModule), (name.addTywaveScope(parentModule), dir, Type(aggString)))
   }
 
   def parseElement(

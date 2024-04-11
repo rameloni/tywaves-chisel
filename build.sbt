@@ -1,4 +1,4 @@
-val chiselVersion    = "6.1.0-tywaves-SNAPSHOT"
+val chiselVersion    = "6.1.0-tywaves-SNAPSHOT" // Local version of chisel
 val scalatestVersion = "3.2.16"
 val circeVersion     = "0.14.6"
 

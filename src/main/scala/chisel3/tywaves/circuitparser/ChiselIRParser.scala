@@ -65,7 +65,7 @@ class ChiselIRParser
 
     // Parse generic info and create an ID for the port
     val (name, info, dir) = (portData.toNamed.name, port.sourceInfo, port.dir)
-    val elId              = this.createId(info, Some(name))
+    val elId              = this.createId(info, Some(name + scope))
 
     ports.put(
       elId,
@@ -161,8 +161,8 @@ class ChiselIRParser
       case _ =>
         // TODO: other cases need to be implemented. For now, simply add the element to the map
         if (hwType == HardwareType("Port", Some(dataType.getWidth)))
-          flattenedPorts.put(elId.addName(name.name), (name, dir, hwType, Type(dataType.typeName)))
-        allElements.put(elId.addName(name.name), (name, dir, Type(dataType.typeName)))
+          flattenedPorts.put(elId.addName(name.name + parentModule), (name, dir, hwType, Type(dataType.typeName)))
+        allElements.put(elId.addName(name.name + parentModule), (name, dir, Type(dataType.typeName)))
       case _ => throw new Exception(s"Failed to parse type $dataType. Unknown type.")
     }
   //  ??? // TODO: Implement for Data types
@@ -184,6 +184,13 @@ class ChiselIRParser
       case _: chiselIR.Printf       => logger.debug("ChiselIRParser: Parsing Printf. Skip."); None
       case _: chiselIR.AltBegin     => logger.debug("ChiselIRParser: Parsing AltBegin. Skip."); None
       case _: chiselIR.OtherwiseEnd => logger.debug("ChiselIRParser: Parsing OtherwiseEnd. Skip."); None
+      case chiselIR.DefInstance(sourceInfo, module, _ports) => {
+        val elId = this.createId(sourceInfo, Some(module.name))
+//        _ports.foreach(parsePort(module.name, _, module.name))
+        modules.put(elId, (Name(module.name, scope, parentModule), null)) // Add the module and its name
+        logger.error(s"DefInstance not implemented: $module. Skip.")
+        None
+      }
       case a =>
         logger.error(s"Match case not covered: $a")
         None

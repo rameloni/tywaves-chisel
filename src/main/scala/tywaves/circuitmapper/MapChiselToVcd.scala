@@ -52,12 +52,16 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
   chiselIRParser.parseCircuit(circuitChiselIR)
 
   // Step 4. Parse the debug information
-  private val gDebugIRParser = new DebugIRParser(workingDir, TypedConverter.getDebugIRFile(gOpt = true))
+  private val topModuleName  = circuitChiselIR.name
+  private val gDebugIRParser = new DebugIRParser(workingDir, TypedConverter.getDebugIRFile(gOpt = true, topModuleName))
+  logger.error(s"HGDD file used: ${TypedConverter.getDebugIRFile(gOpt = true, topModuleName)}")
   //  val debugIRParser =
   //    new DebugIRParser(workingDir, TypedConverter.getDebugIRFile(gOpt = false)) // TODO: check if this is needed or not
 
   gDebugIRParser.parse()
   //  debugIRParser.parse()
+  mapCircuits()
+  dumpLog()
 
   /** Print debug information */
   def printDebug(): Unit = {
@@ -187,21 +191,25 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
     // Each element is associated to the 3 IRs
     // The goal here is to create a Tywavestate
-    val (childVariables, childScopes) = groupIrPerElement.flatMap {
+    val (childVariables, _) = groupIrPerElement.flatMap {
       case (elId, irs) =>
         logger.info(s"Element: $elId")
         // Iterate over the IRs
         irs.flatMap {
           case (ir, Some(value)) =>
-            Some((findChildVariable(elId, value, ir), findChildScopes(value)))
+            Some((
+              findChildVariable(elId, value, ir, circuitChiselIR.name),
+              Seq.empty,
+            ))
           case (ir, None) =>
             logger.debug(s"IR without match: $ir", None)
             None
         }.filter { case (variableOpt, _) => variableOpt.isDefined }
           .map { case (variableOpt, scopes) => (variableOpt.get, scopes) }
-    }.unzip
 
-    val scopes = Seq(tywaves_symbol_table.Scope(name = dutName, childVariables.toSeq, childScopes.flatten.toSeq))
+    }.unzip
+    val childScopes = findChildScopes(circuitChiselIR.name, groupIrPerElement)
+    val scopes      = Seq(tywaves_symbol_table.Scope(name = dutName, childVariables.toSeq, childScopes))
     // Finalize the scopes -> mergeScopes(scope) is not needed anymore
     val finalScopes = cleanFromFlattenedSignals(scopes)
 
@@ -294,16 +302,23 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
     }
 
   /** Find the child variables of a given tuple for a given representation */
-  private def findChildVariable[Tuple](elId: ElId, tuple: Tuple, ir: String): Option[tywaves_symbol_table.Variable] =
+  private def findChildVariable[Tuple](
+      elId:        ElId,
+      tuple:       Tuple,
+      ir:          String,
+      moduleScope: String,
+  ): Option[tywaves_symbol_table.Variable] =
     if (ir == "debugIR")
       tuple match {
         case (
-              Name(name, scope, _),
+              Name(name, scope, tywaveScope),
               Direction(dir),
               HardwareType(hardwareType, size),
               Type(_),
               VerilogSignals(verilogSignals),
             ) =>
+          if (moduleScope != tywaveScope)
+            return None
           // Get the list of children of this variable
           val listChildren = gDebugIRParser.signals.filter {
             case (_: ElId, (Name(_, childScope, _), Direction(_), HardwareType(_, _), Type(_), VerilogSignals(_))) =>
@@ -319,7 +334,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             // TODO: Understand how to handle other types
             tywaves_symbol_table.realtype.Bundle(
               fields = listChildren.flatMap { child =>
-                findChildVariable(child._1, child._2, ir)
+                findChildVariable(child._1, child._2, ir, moduleScope)
               }.toSeq,
               vcdName = Some(name),
             )
@@ -342,7 +357,67 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
       None
     }
 
-  private def findChildScopes[Tuple](value: Tuple): Seq[tywaves_symbol_table.Scope] =
-    // TODO: implement it to support submodules
-    Seq.empty
+  private def findChildScopes(
+      parentScope:       String,
+      groupIrPerElement: Map[ElId, Seq[(String, Option[?])]],
+  ): Seq[tywaves_symbol_table.Scope] = {
+
+    var childScopes: Seq[tywaves_symbol_table.Scope] = Seq.empty
+
+    println(s"findChildScopes of: $parentScope")
+    gDebugIRParser.modules.foreach(println(_))
+
+    val childScopeNames = gDebugIRParser.modules.filter {
+      case (_, Name(_, _, tywaveScope)) =>
+        tywaveScope == parentScope
+    }.map { case (_, Name(name, scope, _)) => (name, scope) }.toSet
+
+    childScopeNames.foreach(println)
+
+    childScopeNames.foreach { x =>
+      val (childScopeName, instanceName) = x
+      val (childVariables, _) = groupIrPerElement.flatMap {
+        case (elId, irs) =>
+          logger.info(s"Element: $elId")
+          // Iterate over the IRs
+          irs.flatMap {
+            case (ir, Some(value)) =>
+              Some((
+                findChildVariable(elId, value, ir, childScopeName),
+                Seq.empty,
+              ))
+            case (ir, None) =>
+              logger.debug(s"IR without match: $ir", None)
+              None
+          }.filter { case (variableOpt, _) => variableOpt.isDefined }
+            .map { case (variableOpt, scopes) => (variableOpt.get, scopes) }
+
+      }.unzip
+      childScopes :+= tywaves_symbol_table.Scope(
+        instanceName,
+        childVariables.toSeq,
+        findChildScopes(childScopeName, groupIrPerElement),
+      )
+    }
+    childScopes
+//    val (childVariables, childScopes) = groupIrPerElement.flatMap {
+//      case (elId, irs) =>
+//        logger.info(s"Element: $elId")
+//        // Iterate over the IRs
+//        irs.flatMap {
+//          case (ir, Some(value)) =>
+//            Some((findChildVariable(elId, value, ir, childScope), findChildScopes(circuitChiselIR.name)))
+//          case (ir, None) =>
+//            logger.debug(s"IR without match: $ir", None)
+//            None
+//        }.filter { case (variableOpt, _) => variableOpt.isDefined }
+//          .map { case (variableOpt, scopes) => (variableOpt.get, scopes) }
+//
+//    }.unzip
+    // Find all the child scopes of this scope
+
+    // Check if the scope is
+//    Seq.empty
+  }
+  // TODO: implement it to support submodules
 }

@@ -24,9 +24,13 @@ object TywavesSimulator extends PeekPokeAPI {
     if (_resetSimulationBeforeRun)
       reset()
 
-    simulator.simulate(module, settings, simName)(body)
-
     val containTywaves = settings.exists(_.isInstanceOf[Tywaves])
+
+    val finalSettings =
+      if (containTywaves) settings ++ Seq(FirtoolArgs(Seq("-O=debug", "-g")))
+      else settings
+    simulator.simulate(module, finalSettings, simName)(body)
+
     if (simulator.finalTracePath.nonEmpty && containTywaves) {
 
       val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = simulator.wantedWorkspacePath)(
@@ -36,7 +40,7 @@ object TywavesSimulator extends PeekPokeAPI {
       )
       mapChiselToVcd.createTywavesState()
 
-      if (settings.contains(Tywaves(true)))
+      if (finalSettings.contains(Tywaves(true)))
         TywavesInterface.run(simulator.finalTracePath.get, Some(mapChiselToVcd.tywavesStatePath))
 
     } else if (containTywaves)
