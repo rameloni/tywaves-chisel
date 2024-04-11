@@ -99,7 +99,21 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
 
     val scope =
       hglddObject.obj_name.lastIndexOf("_") match {
-        case -1 => thisChildName.getOrElse("root"); case i => hglddObject.obj_name.substring(0, i)
+        case -1 => thisChildName.getOrElse("root")
+        case i  =>
+          // TODO: here the problem, multiple instances are separated by _ + an index
+          val lastPart = hglddObject.obj_name.substring(i + 1)
+
+          val tmpScope = hglddObject.obj_name.substring(0, i)
+
+          if (lastPart.forall(Character.isDigit)) {
+            println("FOUND:   " + hglddObject.obj_name)
+            thisChildName.getOrElse("root")
+          } else {
+            println("NOT FOUND:   " + s"tmpScope: $tmpScope" + s" hglddObject.obj_name ${hglddObject.obj_name}")
+            tmpScope
+          }
+
       }
     // Drop the scope from the object name
     val obj_name =
@@ -109,10 +123,23 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
         hglddObject.obj_name.substring(scope.length + 1)
 
     val elId =
-      createId(fileInfo, hglddObject.hgl_loc, obj_name)
+      createId(fileInfo, hglddObject.hgl_loc, obj_name + scope)
     val parentModule =
       hglddObject.obj_name.lastIndexOf("_") match {
-        case -1 => thisChildParentName.getOrElse("root"); case i => hglddObject.obj_name.substring(0, i)
+        case -1 => thisChildParentName.getOrElse("root");
+        case i  =>
+          // TODO: here the problem, multiple instances are separated by _ + an index
+          val lastPart = hglddObject.obj_name.substring(i + 1)
+
+          val tmpScope = hglddObject.obj_name.substring(0, i)
+
+          if (lastPart.forall(Character.isDigit)) {
+            println("FOUND:   " + hglddObject.obj_name)
+            thisChildParentName.getOrElse("root")
+          } else {
+            println("NOT FOUND:   " + s"tmpScope: $tmpScope" + s" hglddObject.obj_name ${hglddObject.obj_name}")
+            tmpScope
+          }
       }
     // Parse the kind of the object
     hglddObject.kind match {
@@ -120,6 +147,7 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
         allElements.put(elId, (Name(obj_name, scope, parentModule), Direction("Unknown"), Type(s)))
         hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name, parentModule))
       case "module" =>
+        println("Module: " + hglddObject.obj_name + " " + scope + " " + parentModule + " " + elId)
         modules.put(elId, Name(obj_name, scope, parentModule))
         hglddObject.port_vars.foreach(parsePortVarFromModule(fileInfo, _, hglddObject.obj_name, hglddObject.obj_name))
       case a =>
@@ -167,7 +195,7 @@ class DebugIRParser(val workingDir: String, ddFilePath: String) {
       scope:        String,
       parentModule: String,
   ): Unit = {
-    val elId = createId(fileInfo, portVar.hgl_loc, portVar.var_name)
+    val elId = createId(fileInfo, portVar.hgl_loc, portVar.var_name + parentModule)
     val name = Name(portVar.var_name, scope, parentModule)
     val dir  = Direction("Unknown")
     val typ  = Type(portVar.type_name)

@@ -9,9 +9,10 @@ class MultiBlinkTest extends AnyFunSpec with Matchers {
   private def blinkTb(dut: => AMultiBlink): Unit = {
     import chisel3.simulator.PeekPokeAPI._
     dut.reset.poke(true.B)
-    dut.io.enable.poke(true.B)
+    dut.io.enable.poke(false.B)
     dut.clock.step(5)
     dut.reset.poke(false.B)
+    dut.io.enable.poke(true.B)
 
     dut.clock.step() // 1
     dut.clock.step() // 2

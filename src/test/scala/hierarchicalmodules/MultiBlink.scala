@@ -22,16 +22,21 @@ class AnotherModule extends Module {
 }
 class AMultiBlink extends Module {
   val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val leds   = Output(UInt(4.W))
+    val enable: Bool = Input(Bool())
+    val leds:   UInt = Output(UInt(4.W))
   })
 
-  val anotherModule = Module(new AnotherModule)
+  val anotherModule: AnotherModule = Module(new AnotherModule)
 
-  val blinker = Module(new SubBlink(5))
+  val blinker:  SubBlink = Module(new SubBlink(5))
+  val blinker2: Blink    = Module(new Blink(3))
+
   blinker.iox.enablex := io.enable
-  when (anotherModule.out === 1.U) {
+  blinker2.io.enable  := io.enable
+
+  when(anotherModule.out === 1.U) {
     blinker.iox.enablex := false.B
+    blinker2.io.enable  := false.B
   }
   io.leds :=
     (blinker.iox.ledx << 3).asUInt + (blinker.iox.ledx << 2).asUInt + (blinker.iox.ledx << 1).asUInt + (blinker.iox.ledx << 0).asUInt

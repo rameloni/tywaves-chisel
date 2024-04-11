@@ -50,7 +50,7 @@ private object TypedConverter {
 
     chiselStage.execute(
       args ++ Array("--target-dir", hglddDebugDir),
-      annotations ++ Seq(circt.stage.FirtoolOption("-g")),
+      annotations ++ Seq(circt.stage.FirtoolOption("-g"), circt.stage.FirtoolOption("-O=debug")),
       // execute returns the passThrough annotations in CIRCT transform stage
     )
   }

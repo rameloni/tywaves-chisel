@@ -37,7 +37,6 @@ private[simulator] case class SaveWorkspace(name: String) extends SimulatorSetti
  */
 private[simulator] case class FirtoolArgs(args: Seq[String]) extends SimulatorSettings
 
-
 /**
  * Package object to expose the simulator settings to the user. The following
  * settings can be used by a simulator to allow users to configure the

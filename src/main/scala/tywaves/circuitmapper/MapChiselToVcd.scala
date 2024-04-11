@@ -209,7 +209,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
     }.unzip
     val childScopes = findChildScopes(circuitChiselIR.name, groupIrPerElement)
-    val scopes = Seq(tywaves_symbol_table.Scope(name = dutName, childVariables.toSeq, childScopes))
+    val scopes      = Seq(tywaves_symbol_table.Scope(name = dutName, childVariables.toSeq, childScopes))
     // Finalize the scopes -> mergeScopes(scope) is not needed anymore
     val finalScopes = cleanFromFlattenedSignals(scopes)
 
@@ -369,7 +369,7 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
 
     val childScopeNames = gDebugIRParser.modules.filter {
       case (_, Name(_, _, tywaveScope)) =>
-       tywaveScope == parentScope
+        tywaveScope == parentScope
     }.map { case (_, Name(name, scope, _)) => (name, scope) }.toSet
 
     childScopeNames.foreach(println)
@@ -393,7 +393,11 @@ class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workin
             .map { case (variableOpt, scopes) => (variableOpt.get, scopes) }
 
       }.unzip
-      childScopes :+= tywaves_symbol_table.Scope(instanceName, childVariables.toSeq, findChildScopes(childScopeName, groupIrPerElement))
+      childScopes :+= tywaves_symbol_table.Scope(
+        instanceName,
+        childVariables.toSeq,
+        findChildScopes(childScopeName, groupIrPerElement),
+      )
     }
     childScopes
 //    val (childVariables, childScopes) = groupIrPerElement.flatMap {

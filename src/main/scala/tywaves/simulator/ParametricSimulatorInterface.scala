@@ -10,10 +10,10 @@ trait ParametricSimulatorInterface {
 
   /** Use this method to run a simulations */
   def simulate[T <: RawModule](
-                                module:   => T,
-                                settings: Seq[SimulatorSettings] = Seq(),
-                                simName:  String = "defaultSimulation",
-                              )(body: T => Unit): Unit = {
+      module:   => T,
+      settings: Seq[SimulatorSettings] = Seq(),
+      simName:  String = "defaultSimulation",
+  )(body: T => Unit): Unit = {
     if (_resetSimulationBeforeRun)
       reset()
     simulator.simulate(module, settings, simName)(body)
