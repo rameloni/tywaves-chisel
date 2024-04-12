@@ -7,7 +7,7 @@ Compile / scalaSource := baseDirectory.value / "src/main/scala"
 Test / scalaSource := baseDirectory.value / "src/test/scala"
 
 ThisBuild / organization := "com.github.rameloni"
-ThisBuild / version      := "0.1.0-SNAPSHOT"
+ThisBuild / version      := "0.2.0-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.12"
 
 enablePlugins(ScalafmtPlugin)
