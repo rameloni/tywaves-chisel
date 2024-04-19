@@ -16,9 +16,9 @@ and suggestions from the community**.
 > If you are interested in using the tool and have any feedback on its implementation, please open an issue or contact
 > me.
 
-Starting from this demo project, a better implementation and integration in the Chisel/Firrtl infrastructure will be
+**Starting from this demo project, a better implementation and integration in the Chisel/Firrtl infrastructure will be
 developed with the aim of solving the issues
-addressed [here](https://github.com/rameloni/Tydi-Chisel-testing-frameworks-analysis).
+addressed [here](https://github.com/rameloni/Tydi-Chisel-testing-frameworks-analysis).**
 
 
 > Do not use Verilog / System Verilog reserved keywords in your Chisel circuit (i.e. `wire`, `reg`).
