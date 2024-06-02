@@ -26,8 +26,9 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
     resetBeforeEachRun()
 
     it("runs GCD with waveform generation") {
-      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(false)), simName = "runs_gcd_with_waveform_generation") { gcd =>
-        gcdTb(gcd)
+      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(false)), simName = "runs_gcd_with_waveform_generation") {
+        gcd =>
+          gcdTb(gcd)
       }
 
       assert(Files.exists(Paths.get("test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/trace.vcd")))
@@ -39,7 +40,11 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("runs GCD with waveform generation and custom name trace") {
-      simulate(new GCD(), Seq(VcdTrace, NameTrace("gcdTest"), WithTywavesWaveforms(false)), simName = "runs_gcd_with_waveform_generation") { gcd =>
+      simulate(
+        new GCD(),
+        Seq(VcdTrace, NameTrace("gcdTest"), WithTywavesWaveforms(false)),
+        simName = "runs_gcd_with_waveform_generation",
+      ) { gcd =>
         gcdTb(gcd)
       }
 
@@ -52,11 +57,10 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("raises an exception when Tywaves is used without VcdTrace") {
-        intercept[Exception] {
-            simulate(new GCD(), Seq(WithTywavesWaveforms(false)))(_ => gcdTb _)
-        }
+      intercept[Exception] {
+        simulate(new GCD(), Seq(WithTywavesWaveforms(false)))(_ => gcdTb _)
+      }
     }
-
 
   }
 

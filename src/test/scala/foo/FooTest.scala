@@ -6,6 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import tywaves.simulator.simulatorSettings._
 
 object RunFoo {
+
   /** Run multiple times */
   def apply(c: => Foo): Unit = {
     // Inputs and expected results

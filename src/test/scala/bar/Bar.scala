@@ -28,7 +28,7 @@ class Bar extends Module {
 
   val cable =
     Wire(Bool()) // do not use reserved verilog words as val names (val wire) -> tywaves-demo does not work for them yet
-  cable  := io.a & io.b
+  cable := io.a & io.b
 
   io.out := cable
 }
