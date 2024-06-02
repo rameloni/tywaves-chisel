@@ -7,7 +7,7 @@ class Blink(period: Int) extends Module {
   assert(period > 0, "limit must be greater than 0")
   val io = IO(new Bundle {
     val enable: Bool = Input(Bool())
-    val led   : Bool = Output(Bool())
+    val led:    Bool = Output(Bool())
   })
 
   val cnt:    Counter = Counter(period)
