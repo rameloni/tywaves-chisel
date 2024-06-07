@@ -3,7 +3,7 @@ package tywaves.simulator
 import chisel3.RawModule
 import chisel3.simulator.PeekPokeAPI
 import svsim.Workspace
-import tywaves.circuitmapper.MapChiselToVcd
+import tywaves.circuitmapper.{MapChiselToVcd, TypedConverter}
 
 object TywavesSimulator extends PeekPokeAPI {
 
@@ -27,22 +27,37 @@ object TywavesSimulator extends PeekPokeAPI {
     val containTywaves = settings.exists(_.isInstanceOf[Tywaves])
 
     val finalSettings =
-      if (containTywaves) settings ++ Seq(FirtoolArgs(Seq("-O=debug", "-g")))
+      if (containTywaves)
+        settings ++ Seq(FirtoolArgs(Seq("-O=debug", "-g", "--emit-hgldd", "--split-verilog", "-o=WORK.v")))
       else settings
     simulator.simulate(module, finalSettings, simName)(body)
 
     if (simulator.finalTracePath.nonEmpty && containTywaves) {
 
-      val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = simulator.wantedWorkspacePath)(
-        topName = "TOP",
-        tbScopeName = Workspace.testbenchModuleName,
-        dutName = "dut",
-      )
-      mapChiselToVcd.createTywavesState()
+//      val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = simulator.wantedWorkspacePath)(
+//        topName = "TOP",
+//        tbScopeName = Workspace.testbenchModuleName,
+//        dutName = "dut",
+//      )
+//      mapChiselToVcd.createTywavesState()
+      // in the trace file
+      // Add the scopes to the module: TOP, svsimTestbench, dut
+
+      val extraScopes = Seq("TOP", Workspace.testbenchModuleName, "dut")
+
+      val anno = TypedConverter.getChiselStageAnno(() => module, simulator.wantedWorkspacePath)
+      // Find the top module name
+      val topModuleName = anno.collectFirst {
+        case chisel3.stage.ChiselCircuitAnnotation(circuit) => circuit.name
+      }
 
       if (finalSettings.contains(Tywaves(true)))
-        TywavesInterface.run(simulator.finalTracePath.get, Some(mapChiselToVcd.tywavesStatePath))
-
+        TywavesInterface.run(
+          simulator.finalTracePath.get,
+          Some(TypedConverter.getDebugIRDir(gOpt = true)),
+          extraScopes,
+          topModuleName,
+        )
     } else if (containTywaves)
       throw new Exception("Tywaves waveform generation requires a trace file. Please enable VcdTrace.")
 

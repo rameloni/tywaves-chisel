@@ -3,6 +3,7 @@ package chisel3.tywaves.circuitparser
 import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type}
 import tywaves.utils.UniqueHashMap
 
+@deprecated("This trait is not used anymore. It is kept for reference.", "0.3.0")
 trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
 
   lazy val modules        = new UniqueHashMap[ElId, (Name, ModuleT)]()
@@ -10,10 +11,14 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
   lazy val flattenedPorts = new UniqueHashMap[ElId, (Name, Direction, HardwareType, Type)]()
   lazy val allElements    = new UniqueHashMap[ElId, (Name, Direction, Type)]()
 
+  @deprecated(since = "0.3.0")
   def parseCircuit(circuit: T): Unit
-  def parseModule(module:   ModuleT): Unit
-  def parsePort(scope:      String, port: PortT, parentModule: String): Unit
+  @deprecated(since = "0.3.0")
+  def parseModule(module: ModuleT): Unit
+  @deprecated(since = "0.3.0")
+  def parsePort(scope: String, port: PortT, parentModule: String): Unit
 
+  @deprecated(since = "0.3.0")
   def getWidth(agg: AggregateT): Int = {
     val widthPattern = "<(\\d+)>".r
     agg match {
@@ -39,6 +44,7 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
     }
   }
 
+  @deprecated(since = "0.3.0")
   def parseAggregate(
       elId:         ElId,
       name:         Name,
@@ -62,6 +68,7 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
     allElements.put(elId.addName(name.name + parentModule), (name.addTywaveScope(parentModule), dir, Type(aggString)))
   }
 
+  @deprecated(since = "0.3.0")
   def parseElement(
       elId:         ElId,
       name:         Name,
@@ -70,14 +77,17 @@ trait CircuitParser[T, ModuleT, PortT, AggregateT, ElementT, BodyStatementT] {
       element:      ElementT,
       parentModule: String,
   ): Unit
+  @deprecated(since = "0.3.0")
   def parseBodyStatement(scope: String, body: BodyStatementT, parentModule: String): Unit
 
+  @deprecated(since = "0.3.0")
   def dumpMaps(fileDump: String): Unit = {
     modules.dumpFile(fileDump, "Modules:", append = false)
     ports.dumpFile(fileDump, "Ports:")
     flattenedPorts.dumpFile(fileDump, "Flattened Ports:")
     allElements.dumpFile(fileDump, "Internal Elements:")
   }
+  @deprecated(since = "0.3.0")
   def dumpMaps(): Unit = {
     println()
     // Change color

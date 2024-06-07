@@ -18,3 +18,5 @@ test_run_dir/
 build/
 
 *.anno.json
+
+tmp/

@@ -5,6 +5,7 @@ import firrtl.{ir => firrtlIR}
 import tywaves.utils.UniqueHashMap
 import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type}
 
+@deprecated("This class is not used anymore. It is kept for reference.", "0.3.0")
 class FirrtlIRParser
     extends CircuitParser[
       firrtlIR.Circuit,
