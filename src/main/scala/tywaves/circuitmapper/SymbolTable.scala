@@ -6,6 +6,7 @@ import scala.math.Ordered.orderingToOrdered
 
 // TODO: Define a case class to output the information in json with circe
 
+@deprecated(since = "0.3.0")
 object Defaults {
   lazy val elId   = ElId("", 0, 0)
   lazy val name   = Name("", "", "")
@@ -14,10 +15,13 @@ object Defaults {
   lazy val typ    = Type("")
 }
 
+@deprecated(since = "0.3.0")
 sealed trait CircuitIR
 
+@deprecated(since = "0.3.0")
 sealed trait CircuitIRElement
 
+@deprecated(since = "0.3.0")
 // TODO: Redefine the ElId in a more meaningful way
 case class ElId(
     source: String,
@@ -38,30 +42,37 @@ case class ElId(
   override def toString: String = s"$name:\t$row:\t$col:\t$source"
 }
 
+@deprecated(since = "0.3.0")
 case class Name(name: String, scope: String, tywaveScope: String) extends Ordered[Name] {
   def addTywaveScope(parentModule: String): Name = this.copy(tywaveScope = parentModule)
   override def compare(that: Name): Int =
     (this.name, this.scope, this.tywaveScope) compare ((that.name, that.scope, that.tywaveScope))
   override def toString: String = s"Name: $name, scope: $scope, tywaveScope: $tywaveScope"
 }
+@deprecated(since = "0.3.0")
 case class Type(name: String) extends Ordered[Type] {
   override def compare(that: Type): Int = this.name compare that.name
   override def toString: String = s"Type: $name"
 
 } // TODO: add pretty name to type
+@deprecated(since = "0.3.0")
 case class HardwareType(name: String, size: Option[Int]) {
   override def toString: String = s"HardwareType: $name"
 
 }
+@deprecated(since = "0.3.0")
 case class Direction(name: String) extends Ordered[Direction] {
   override def compare(that: Direction): Int = this.name compare that.name
   override def toString: String = s"Direction: $name"
 }
 
+@deprecated(since = "0.3.0")
 case class VerilogSignals(names: Seq[String])
 
+@deprecated(since = "0.3.0")
 object tywaves_symbol_table {
   import io.circe._
+  @deprecated(since = "0.3.0")
   object tywaves_encoders {
     import io.circe.generic.extras._
     implicit val customConfiguration: Configuration =
@@ -105,11 +116,14 @@ object tywaves_symbol_table {
   }
 
   /** The state for Tywaves */
+  @deprecated(since = "0.3.0")
   case class TywaveState(var scopes: Seq[Scope])
 
   /** A scope in the state */
+  @deprecated(since = "0.3.0")
   case class Scope(name: String, childVariables: Seq[Variable], childScopes: Seq[Scope])
 
+  @deprecated(since = "0.3.0")
   case class Variable(
       name:     String,
       typeName: String,
@@ -120,6 +134,7 @@ object tywaves_symbol_table {
   }
 
   /** Hardware types */
+  @deprecated(since = "0.3.0")
   object hwtype {
     def from_string(tpe: String, dir: Option[String]): HwType =
       (tpe, dir) match {
@@ -129,18 +144,25 @@ object tywaves_symbol_table {
       }
     sealed trait HwType
 
+    @deprecated(since = "0.3.0")
     case object Wire extends HwType
 
+    @deprecated(since = "0.3.0")
     case object Reg extends HwType
 
+    @deprecated(since = "0.3.0")
     case class Port(dir: direction.Directions) extends HwType
 
+    @deprecated(since = "0.3.0")
     case object Mem extends HwType
 
+    @deprecated(since = "0.3.0")
     case object Unknown extends HwType
   }
 
+  @deprecated(since = "0.3.0")
   object direction {
+    @deprecated(since = "0.3.0")
     def from_string(dir: String): Directions =
       dir match {
         case "Input"  => Input
@@ -149,14 +171,20 @@ object tywaves_symbol_table {
         case _        => Unknown
       }
 
+    @deprecated(since = "0.3.0")
     sealed trait Directions
 
-    case object Input   extends Directions
-    case object Output  extends Directions
-    case object Inout   extends Directions
+    @deprecated(since = "0.3.0")
+    case object Input extends Directions
+    @deprecated(since = "0.3.0")
+    case object Output extends Directions
+    @deprecated(since = "0.3.0")
+    case object Inout extends Directions
+    @deprecated(since = "0.3.0")
     case object Unknown extends Directions
   }
 
+  @deprecated(since = "0.3.0")
   object realtype {
 //    def from_string(tpe: String): RealType = {
 //      tpe match {
@@ -164,20 +192,25 @@ object tywaves_symbol_table {
 //        case
 //      }
 //    }
+    @deprecated(since = "0.3.0")
     sealed trait RealType {
       def getWidth: Int = 0
     }
+    @deprecated(since = "0.3.0")
     case class Ground(width: Int, vcdName: String) extends RealType {
       override def getWidth: Int = width
     }
+    @deprecated(since = "0.3.0")
     case class Vec(size: Int, fields: Seq[Variable]) extends RealType {
       override def getWidth: Int = if (fields.nonEmpty)
         size * fields.head.realType.getWidth
       else 0
     }
+    @deprecated(since = "0.3.0")
     case class Bundle(fields: Seq[Variable], vcdName: Option[String]) extends RealType {
       override def getWidth: Int = fields.map(f => f.getWidth).sum
     }
+    @deprecated(since = "0.3.0")
     case object Unknown extends RealType
   }
 

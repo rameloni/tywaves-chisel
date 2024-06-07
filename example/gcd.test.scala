@@ -1,5 +1,5 @@
 //> using scala "2.13.12"
-//> using dep "com.github.rameloni::tywaves-demo-backend:0.2.1-SNAPSHOT"
+//> using dep "com.github.rameloni::tywaves-demo-backend:0.3.0-SNAPSHOT"
 //> using dep "org.chipsalliance::chisel:6.3.0"
 //> using plugin "org.chipsalliance:::chisel-plugin:6.3.0"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"

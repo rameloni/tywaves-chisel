@@ -6,6 +6,7 @@ package tywaves
  */
 package object hglddparser {
 
+  @deprecated(since = "0.3.0")
   /** Top component of the `hgldd.dd` file. */
   case class HglddTopInterface(HGLDD: HglddHeader, objects: Seq[HglddObject])
 
@@ -20,6 +21,7 @@ package object hglddparser {
    * @param hdl_file_index
    *   The index of the hdl file in the [[file_info]] list
    */
+  @deprecated(since = "0.3.0")
   case class HglddHeader(version: String, file_info: Seq[String], hdl_file_index: Int)
 
   /**
@@ -38,6 +40,7 @@ package object hglddparser {
    *   Optional param which would contain the names of the children modules of
    *   the object
    */
+  @deprecated(since = "0.3.0")
   case class HglddObject(
       hgl_loc:     HglLocation,
       kind:        String,
@@ -48,6 +51,7 @@ package object hglddparser {
       children:    Option[Seq[Child]],
   )
 
+  @deprecated(since = "0.3.0")
   case class HglLocation(
       begin_column: Int,
       begin_line:   Int,
@@ -55,6 +59,7 @@ package object hglddparser {
       end_line:     Int,
       file:         Int,// The index of the file in the file_info list
   )
+  @deprecated(since = "0.3.0")
   case class HdlLocation(begin_line: Int, end_line: Int, file: Int) // Imp: I can parse only the fields I need
 
   /**
@@ -65,6 +70,7 @@ package object hglddparser {
    * @param type_name
    *   the type in the HDL
    */
+  @deprecated(since = "0.3.0")
   case class PortVar(
       var_name:       String,
       hgl_loc:        HglLocation,
@@ -86,6 +92,7 @@ package object hglddparser {
    *   this is contains values of nested fields for aggregates like bundles and
    *   vecs. So it is possible to rebuild the hierarchy
    */
+  @deprecated(since = "0.3.0")
   case class Value(
       bit_vector: Option[String],
       sig_name:   Option[String],
@@ -93,6 +100,7 @@ package object hglddparser {
       operands:   Option[Seq[Value]],
   )
 
+  @deprecated(since = "0.3.0")
   case class Child(name: String, obj_name: String, module_name: String, hgl_loc: HglLocation, hdl_loc: HdlLocation)
 
 }

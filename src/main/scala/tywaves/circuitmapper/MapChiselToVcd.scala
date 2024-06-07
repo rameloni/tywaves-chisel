@@ -17,6 +17,7 @@ import scala.annotation.unused
  * It is used to extract the Chisel IR and the Firrtl IR from the ChiselStage
  * and then use it to generate the VCD file.
  */
+@deprecated(since = "0.3.0")
 class MapChiselToVcd[T <: RawModule](generateModule: () => T, private val workingDir: String = "workingDir")(
     topName:     String,
     tbScopeName: String,

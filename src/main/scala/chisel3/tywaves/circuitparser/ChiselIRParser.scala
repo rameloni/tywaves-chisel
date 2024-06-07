@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.Logger
 import tywaves.utils.UniqueHashMap
 import tywaves.circuitmapper.{Direction, ElId, HardwareType, Name, Type, tywaves_symbol_table}
 
+@deprecated("This class is not used anymore. It is kept for reference.", "0.3.0")
 class ChiselIRParser
     extends CircuitParser[chiselIR.Circuit, chiselIR.Component, chiselIR.Port, Aggregate, Data, chiselIR.Command] {
 

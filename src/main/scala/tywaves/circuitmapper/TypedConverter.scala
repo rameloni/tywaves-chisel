@@ -3,18 +3,19 @@ package tywaves.circuitmapper
 import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import firrtl.AnnotationSeq
+import tywaves.BuildInfo.firtoolBinaryPath
 
 import java.io.{BufferedReader, FileReader}
 
 /** This object exposes the Convert phase used in ChiselStage */
-private object TypedConverter {
+private[tywaves] object TypedConverter {
   private lazy val converter   = new chisel3.stage.phases.Convert
-  private lazy val chiselStage = new circt.stage.ChiselStage
+  private lazy val chiselStage = new circt.stage.ChiselStage(withDebug = true)
 
-  private val args = Array("--target", "systemverilog", "--split-verilog")
+  private val args = Array("--target", "systemverilog", "--split-verilog", "--firtool-binary-path", firtoolBinaryPath)
 
   private var hglddDebugDir   = "hgldd/debug"
-  private var hglddWithOptDir = "hgldd/opt"
+  private var hglddWithOptDir = "hgldd/opt" // TODO: remove
 
   // In the default annotations, emit also the debug hgldd file (a json file containing info from the debug dialect)
   private val defaultAnnotations =
@@ -32,6 +33,7 @@ private object TypedConverter {
   private def createFirtoolOptions(args: Seq[String]): AnnotationSeq =
     args.map(circt.stage.FirtoolOption).toSeq
 
+  @deprecated(since = "0.3.0")
   /** This function is used to add the FirrtlIR representation */
   def addFirrtlAnno(annotations: AnnotationSeq): AnnotationSeq =
     converter.transform(annotations)
@@ -55,6 +57,11 @@ private object TypedConverter {
     )
   }
 
+  def getDebugIRDir(gOpt: Boolean): String =
+    if (gOpt) hglddDebugDir
+    else hglddWithOptDir
+
+  @deprecated("This function is not used anymore. It is kept for reference.", "0.3.0")
   /** Get the name of the debug file */
   def getDebugIRFile(gOpt: Boolean, topModuleName: String): String = {
 
