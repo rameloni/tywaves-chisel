@@ -1,4 +1,4 @@
-val chiselVersion    = "6.4.1-tywaves-SNAPSHOT" // Local version of chisel
+val chiselVersion    = "6.4.2-tywaves-SNAPSHOT" // Local version of chisel
 val scalatestVersion = "3.2.16"
 val circeVersion     = "0.14.6"
 
@@ -14,7 +14,7 @@ Test / scalaSource := baseDirectory.value / "src/test/scala"
 
 ThisBuild / organization := "com.github.rameloni"
 ThisBuild / version      := "0.3.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "2.13.14"
 
 enablePlugins(ScalafmtPlugin)
 

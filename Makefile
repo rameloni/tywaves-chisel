@@ -10,7 +10,7 @@ TYWAVES_SURFER_INSTALL_PATH=$(HOME)/.cargo/bin/
 
 # Chisel information
 CHISEL_FORK_REPO=https://github.com/rameloni/chisel.git
-CHISEL_FORK_TAG=v6.4.1-tywaves-SNAPSHOT
+CHISEL_FORK_TAG=v6.4.2-tywaves-SNAPSHOT
 
 # Circt (firtool) information
 CIRCT_FIRTOOL_ZIP_NAME=firtool-bin-linux-x64.tar.gz
@@ -24,6 +24,14 @@ all: install-surfer-tywaves install-chisel-fork install-firtool-fork-bin clean i
 
 create-tmp:
 	@mkdir -p tmp/
+
+install-surfer-tywaves-dev: create-tmp
+	@echo "Installing Surfer TyWaves from main branch"
+	@cd tmp/ && git clone -b main $(TYWAVES_SURFER_REPO) && cd $(TYWAVES_SURFER_NAME) && git submodule update --init --recursive
+	@#cd tmp/$(TYWAVES_SURFER_NAME) && cargo install --path .
+	@cd tmp/$(TYWAVES_SURFER_NAME) && cargo build --release
+	@cp tmp/$(TYWAVES_SURFER_NAME)/target/release/$(TYWAVES_SURFER_BIN) $(TYWAVES_SURFER_INSTALL_PATH)$(TYWAVES_SURFER_TARGET_NAME)
+	echo "installed $(TYWAVES_SURFER_TARGET_NAME) in $(TYWAVES_SURFER_INSTALL_PATH)"
 
 install-surfer-tywaves: create-tmp
 	@cd tmp/ && git clone -b $(TYWAVES_SURFER_TAG) $(TYWAVES_SURFER_REPO) && cd $(TYWAVES_SURFER_NAME) && git submodule update --init --recursive

@@ -1,4 +1,4 @@
-//> using scala "2.13.12"
+//> using scala "2.13.14"
 //> using dep "com.github.rameloni::tywaves-demo-backend:0.3.0-SNAPSHOT"
 //> using dep "org.chipsalliance::chisel:6.3.0"
 //> using plugin "org.chipsalliance:::chisel-plugin:6.3.0"
