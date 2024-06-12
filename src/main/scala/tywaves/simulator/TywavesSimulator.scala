@@ -3,7 +3,7 @@ package tywaves.simulator
 import chisel3.RawModule
 import chisel3.simulator.PeekPokeAPI
 import svsim.Workspace
-import tywaves.circuitmapper.{MapChiselToVcd, TypedConverter}
+import tywaves.circuitmapper.TypedConverter
 
 object TywavesSimulator extends PeekPokeAPI {
 
