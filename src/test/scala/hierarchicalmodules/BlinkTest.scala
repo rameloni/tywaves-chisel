@@ -52,7 +52,7 @@ class BlinkTest extends AnyFunSpec with Matchers {
     it("should work") {
       simulate(
         new Blink(4),
-        Seq(VcdTrace, WithTywavesWaveforms(true), SaveWorkdirFile("workdir")),
+        Seq(VcdTrace, WithTywavesWaveforms(false), SaveWorkdirFile("workdir")),
         simName = "blink_with_tywaves_sim_should_work",
       ) { dut =>
         blinkTb(dut)

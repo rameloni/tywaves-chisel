@@ -1,6 +1,7 @@
 package bar
 
 import chisel3._
+
 class Baz(n: Int) extends Bundle {
   val a = UInt(n.W)
   val b = UInt(n.W)
@@ -30,8 +31,12 @@ class Bar extends Module {
     Wire(Bool()) // do not use reserved verilog words as val names (val wire) -> tywaves-demo does not work for them yet
   cable := io.a & io.b
 
+  val wire = Wire(UInt(8.W)) // this is translated to wire_0
+  wire := cable
+
   io.out := cable
 }
+
 object MainBar extends App {
   import circt.stage.ChiselStage
 
@@ -42,7 +47,7 @@ object MainBar extends App {
         "-O=debug",
         "-g",
         "-emit-hgldd",
-        "-output-final-mlir=Fooa.mlir",
+        "-output-final-mlir=Foo.mlir",
       ),
     )
   )

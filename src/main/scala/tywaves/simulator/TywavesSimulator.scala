@@ -21,8 +21,9 @@ object TywavesSimulator extends PeekPokeAPI {
       settings: Seq[SimulatorSettings] = Seq(),
       simName:  String = "defaultSimulation",
   )(body: T => Unit): Unit = {
-    if (_resetSimulationBeforeRun)
-      reset()
+
+    // Create a new simulator instance
+    val simulator = new TywavesSimulator
 
     val containTywaves = settings.exists(_.isInstanceOf[Tywaves])
 
@@ -56,9 +57,11 @@ object TywavesSimulator extends PeekPokeAPI {
    * Use this method to manually reset the simulator and run multiple
    * independent simulations
    */
+  @deprecated
   def reset(): Unit =
     simulator = new TywavesSimulator
 
+  @deprecated
   def resetBeforeEachRun(): Unit =
     _resetSimulationBeforeRun = true
 }
