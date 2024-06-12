@@ -15,7 +15,7 @@ object TywavesSimulator extends PeekPokeAPI {
   /** If true, the simulator will be reset before running each simulation */
   private var _resetSimulationBeforeRun = false
 
-  /** Use this method to run a simulations */
+  /** Use this method to run a simulation */
   def simulate[T <: RawModule](
       module:   => T,
       settings: Seq[SimulatorSettings] = Seq(),
@@ -33,30 +33,19 @@ object TywavesSimulator extends PeekPokeAPI {
     simulator.simulate(module, finalSettings, simName)(body)
 
     if (simulator.finalTracePath.nonEmpty && containTywaves) {
-
-//      val mapChiselToVcd = new MapChiselToVcd(() => module, workingDir = simulator.wantedWorkspacePath)(
-//        topName = "TOP",
-//        tbScopeName = Workspace.testbenchModuleName,
-//        dutName = "dut",
-//      )
-//      mapChiselToVcd.createTywavesState()
-      // in the trace file
-      // Add the scopes to the module: TOP, svsimTestbench, dut
-
+      // Get the extra scopes created by ChiselSim backend: TOP, svsimTestbench, dut
       val extraScopes = Seq("TOP", Workspace.testbenchModuleName, "dut")
 
-      val anno = TypedConverter.getChiselStageAnno(() => module, simulator.wantedWorkspacePath)
-      // Find the top module name
-      val topModuleName = anno.collectFirst {
-        case chisel3.stage.ChiselCircuitAnnotation(circuit) => circuit.name
-      }
+      // Create the debug info from the firtool and get the top module name
+      TypedConverter.createDebugInfoHgldd(() => module, simulator.wantedWorkspacePath)
 
+      // Run tywaves viewer if the Tywaves waveform generation is enabled by Tywaves(true)
       if (finalSettings.contains(Tywaves(true)))
         TywavesInterface.run(
-          simulator.finalTracePath.get,
-          Some(TypedConverter.getDebugIRDir(gOpt = true)),
-          extraScopes,
-          topModuleName,
+          vcdPath = simulator.finalTracePath.get,
+          hglddDirPath = Some(TypedConverter.getDebugInfoDir(gOpt = true)),
+          extraScopes = extraScopes,
+          topModuleName = TypedConverter.getTopModuleName,
         )
     } else if (containTywaves)
       throw new Exception("Tywaves waveform generation requires a trace file. Please enable VcdTrace.")

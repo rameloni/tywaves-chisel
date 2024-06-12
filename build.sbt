@@ -49,8 +49,11 @@ lazy val root = (project in file("."))
       "UTF-8",
       "-feature",
       "-unchecked",
-      // "-Xfatal-warnings",
       "-language:reflectiveCalls",
+      "-Xcheckinit",
+//      "-Xfatal-warnings",
+      "-Ywarn-dead-code",
+      "-Ywarn-unused",
       "-Ymacro-annotations",
     ),
   )

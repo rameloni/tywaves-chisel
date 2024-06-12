@@ -1,5 +1,7 @@
 package tywaves.simulator
 
+import scala.annotation.unused
+
 private[tywaves] object TywavesInterface {
 
   private val program = tywaves.BuildInfo.surferTywavesBinaryPath
@@ -33,7 +35,7 @@ private[tywaves] object TywavesInterface {
     val cmd = Seq(program, vcdPath) ++ hglddDirCmd ++ hglddDirPath ++ extraScopesCmd
 
     // Execute and return to the caller
-    val process = new ProcessBuilder(cmd: _*).inheritIO().start()
+    @unused val process = new ProcessBuilder(cmd: _*).inheritIO().start()
     // No wait for the process to finish
   }
 }
