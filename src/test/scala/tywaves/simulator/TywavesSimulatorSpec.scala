@@ -34,7 +34,7 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
       assert(Files.exists(Paths.get("test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/trace.vcd")))
       assert(Files.exists(
         Paths.get(
-          "test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/tywaves-log/tywavesState.json"
+          "test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/hgldd/debug/GCD.dd"
         )
       ))
     }
@@ -51,7 +51,7 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
       assert(Files.exists(Paths.get("test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/gcdTest.vcd")))
       assert(Files.exists(
         Paths.get(
-          "test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/tywaves-log/tywavesState.json"
+          "test_run_dir/GCD/TywavesSimulator/runs_gcd_with_waveform_generation/hgldd/debug/GCD.dd"
         )
       ))
     }

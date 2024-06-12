@@ -11,7 +11,7 @@ import chisel3._
 class GCDTest extends AnyFunSpec with Matchers {
   describe("ParametricSimulator") {
     it("runs GCD correctly") {
-      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("aaa"))) { gcd =>
+      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("gcdWorkDir"))) { gcd =>
         gcd.io.a.poke(24.U)
         gcd.io.b.poke(36.U)
         gcd.io.loadValues.poke(1.B)
@@ -28,7 +28,7 @@ class GCDTest extends AnyFunSpec with Matchers {
     it("runs GCD correctly") {
       import TywavesSimulator._
 
-      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_GCD_correctly_launch_tywaves") {
+      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(false)), simName = "runs_GCD_correctly") {
         gcd =>
           gcd.io.a.poke(24.U)
           gcd.io.b.poke(36.U)

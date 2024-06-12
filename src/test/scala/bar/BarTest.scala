@@ -34,7 +34,7 @@ class BarTest extends AnyFlatSpec {
 
     simulate(
       module = new Bar,
-      settings = Seq(VcdTraceWithUnderscore, SaveWorkdir, WithTywavesWaveforms(true)),
+      settings = Seq(VcdTraceWithUnderscore, SaveWorkdir, WithTywavesWaveforms(false)),
       simName = "trace_simple_bar_with_tywaves",
     ) { c =>
       c.clock.step()

@@ -2,58 +2,84 @@ package tywaves.circuitmapper
 
 import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
-import firrtl.AnnotationSeq
 import tywaves.BuildInfo.firtoolBinaryPath
 
-import java.io.{BufferedReader, FileReader}
+/** This case class is used to store the top module name */
+private[tywaves] case class TopModuleName(private[circuitmapper] var name: Option[String])
 
-/** This object exposes the Convert phase used in ChiselStage */
+/** This object contains methods to create debug information from firtool */
 private[tywaves] object TypedConverter {
-  private lazy val converter   = new chisel3.stage.phases.Convert
   private lazy val chiselStage = new circt.stage.ChiselStage(withDebug = true)
 
-  private val args = Array("--target", "systemverilog", "--split-verilog", "--firtool-binary-path", firtoolBinaryPath)
+  private val chiselStageBaseArgs =
+    Array("--target", "systemverilog", "--split-verilog", "--firtool-binary-path", firtoolBinaryPath)
 
+  // Directories where the debug information is stored
   private var hglddDebugDir   = "hgldd/debug"
   private var hglddWithOptDir = "hgldd/opt" // TODO: remove
+  private var workingDir: Option[String] = None
+  private val topModuleName = TopModuleName(None)
 
-  // In the default annotations, emit also the debug hgldd file (a json file containing info from the debug dialect)
-  private val defaultAnnotations =
+  // Default firtool options encoded as annotations for ChiselStage
+  private val defaultFirtoolOptAnno =
     createFirtoolOptions(Seq(
-//      "-disable-annotation-unknown",
-      "--emit-hgldd",
-      "--hgldd-output-prefix=<path>",
+      "--emit-hgldd"
+      //      "-disable-annotation-unknown",
+      //      "--hgldd-output-prefix=<path>",
       /*,"--output-final-mlir=WORK.mlir"*/
     ))
 
-  private var workingDir: Option[String] = None
+  // Map any sequence of string into FirtoolOptions
+  private def createFirtoolOptions(args: Seq[String]) = args.map(circt.stage.FirtoolOption)
 
-  val debugFileExt = ".dd" // extension of the debug file
-
-  private def createFirtoolOptions(args: Seq[String]): AnnotationSeq =
-    args.map(circt.stage.FirtoolOption).toSeq
-
-  /** This function is used to elaborate the circuit and get the ChiselIR */
-  def getChiselStageAnno[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): AnnotationSeq = {
+  /**
+   * Create debug information from firtool by using the
+   * [[circt.stage.ChiselStage]]
+   */
+  def createDebugInfoHgldd[T <: RawModule](
+      generateModule: () => T,
+      workingDir:     String = "workingDir",
+  ): Unit = {
     this.workingDir = Some(workingDir)
     hglddWithOptDir = workingDir + "/" + hglddWithOptDir
     hglddDebugDir = workingDir + "/" + hglddDebugDir
 
-    val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultAnnotations
+    // Annotations for ChiselStage
+    val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultFirtoolOptAnno
+
+    // Run without debug mode
     chiselStage.execute(
-      args ++ Array("--target-dir", hglddWithOptDir),
+      chiselStageBaseArgs ++ Array("--target-dir", hglddWithOptDir),
       annotations,
     ) // execute returns the passThrough annotations in CIRCT transform stage
 
-    chiselStage.execute(
-      args ++ Array("--target-dir", hglddDebugDir),
-      annotations ++ Seq(circt.stage.FirtoolOption("-g"), circt.stage.FirtoolOption("-O=debug")),
-      // execute returns the passThrough annotations in CIRCT transform stage
-    )
+    // Run with debug mode
+    val finalAnno = chiselStage.execute(
+      chiselStageBaseArgs ++ Array("--target-dir", hglddDebugDir),
+      annotations ++ createFirtoolOptions(Seq("-O=debug", "-g")),
+    ) // execute returns the passThrough annotations in CIRCT transform stage
+
+    // Get the module name
+    topModuleName.name = finalAnno.collectFirst {
+      case chisel3.stage.ChiselCircuitAnnotation(circuit) => circuit.name
+    }
   }
 
-  def getDebugIRDir(gOpt: Boolean): String =
+  /** Get the directory where the debug information is stored */
+  def getDebugInfoDir(gOpt: Boolean): String =
     if (gOpt) hglddDebugDir
     else hglddWithOptDir
+
+  /**
+   * Return the working directory used in the last call of
+   * [[createDebugInfoHgldd]]
+   */
+  def getWorkingDir: Option[String] = workingDir
+
+  /**
+   * Return the top module name of the last circuit used in the last call of
+   * [[createDebugInfoHgldd]]
+   */
+  def getTopModuleName: Option[String] = topModuleName.name
 
 }

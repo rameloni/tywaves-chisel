@@ -46,7 +46,7 @@ class MultiBlinkTest extends AnyFunSpec with Matchers {
     it("should work") {
       simulate(
         new AMultiBlink,
-        Seq(VcdTrace, WithTywavesWaveforms(true), SaveWorkdirFile("workdir")),
+        Seq(VcdTrace, WithTywavesWaveforms(false), SaveWorkdirFile("workdir")),
         simName = "multiblink_with_tywaves_sim_should_work",
       ) { dut =>
         blinkTb(dut)
