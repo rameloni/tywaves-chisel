@@ -33,11 +33,6 @@ private[tywaves] object TypedConverter {
   private def createFirtoolOptions(args: Seq[String]): AnnotationSeq =
     args.map(circt.stage.FirtoolOption).toSeq
 
-  @deprecated(since = "0.3.0")
-  /** This function is used to add the FirrtlIR representation */
-  def addFirrtlAnno(annotations: AnnotationSeq): AnnotationSeq =
-    converter.transform(annotations)
-
   /** This function is used to elaborate the circuit and get the ChiselIR */
   def getChiselStageAnno[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): AnnotationSeq = {
     this.workingDir = Some(workingDir)
@@ -61,33 +56,4 @@ private[tywaves] object TypedConverter {
     if (gOpt) hglddDebugDir
     else hglddWithOptDir
 
-  @deprecated("This function is not used anymore. It is kept for reference.", "0.3.0")
-  /** Get the name of the debug file */
-  def getDebugIRFile(gOpt: Boolean, topModuleName: String): String = {
-
-    def getFile(_workingDir: String): String = {
-      val workingDir = new java.io.File(_workingDir)
-      // Open the HGLDD file and extract the information
-      if (workingDir.exists() && workingDir.isDirectory) {
-        workingDir.listFiles().filter(_.getName == topModuleName + debugFileExt).head.getAbsolutePath
-      } else
-        throw new Exception(s"WorkingDir: $workingDir does not exist or is not a directory.")
-    }
-
-    if (gOpt) getFile(this.hglddDebugDir)
-    else getFile(this.hglddWithOptDir)
-  }
-}
-
-object GenerateHgldd {
-
-  /**
-   * It generates runs the mapper Chisel to Vcd and returns the directory where
-   * the HGLDD is dumped.
-   */
-  def apply[T <: RawModule](generateModule: () => T, workingDir: String = "workingDir"): String = {
-    val mapChiselToVcd = new MapChiselToVcd(generateModule, workingDir)("TOP", "TbName", "DutName")
-    mapChiselToVcd.dumpLog()
-    TypedConverter.getDebugIRFile(gOpt = true, generateModule.toString())
-  }
 }
