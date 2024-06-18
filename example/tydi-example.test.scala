@@ -233,7 +233,7 @@ class Reducer extends Reducer_interface {
 class PipelineSimpleTest extends AnyFunSpec with Matchers {
   describe("ParametricSimulator") {
     it("runs Pipeline Simple correctly") {
-      simulate(new PipelineSimple, Seq(VcdTrace, SaveWorkdirFile("aaa"))) {
+      simulate(new PipelineSimple, Seq(VcdTrace, SaveWorkdirFile("pipelineSimpleWorkdir"))) {
         dut => dut.clock.step()
       }
     }

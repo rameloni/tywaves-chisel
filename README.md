@@ -1,164 +1,190 @@
-# Tywaves demo project: Chisel backend
+# Tywaves project: a type based waveform viewer for Chisel and Tydi-Chisel
 
-Demo backend of the Tywaves project: a type based waveform viewer for Chisel
+This repository contains a summary of the Tywaves project and an API to easily use it for testing a Chisel project.
+Tywaves consists of implementing a new type based waveform viewer for [Chisel](https://www.chisel-lang.org/)
 and [Tydi-Chisel](https://github.com/abs-tudelft/Tydi-Chisel) circuits.
 
-This repo contains functions that parse the information of a Chisel circuit and the debug info emitted by the firtool
-compiler, simulate a circuit using ChiselSim and combine all the information and pass them to the
-[surfer-tywaves-demo](https://gitlab.com/rameloni/surfer-tywaves-demo) frontend for visualization (an extension of the
-Surfer waveform viewer written in Rust to support Chisel constructs).
+The full project aims to successfully display waveforms of a Chisel circuit while **maintaining the source code
+structure, constructs, hierarchies and source language type information (the scala data type and constructor parameters)
+of signals and modules**.
 
-Since it is a demo project, it has been tested and developed for a restricted set of examples (it may not work with
-all circuits). In the [features](#features) section, you can find the already supported features.
-This demo served only as an example to show how the waveform viewer can potentially look like and **for initial feedback
-and suggestions from the community**.
+To achieve this goal, the project should:
 
-> If you are interested in using the tool and have any feedback on its implementation, please open an issue or contact
-> me.
+1. collect high-level debug information (DI) of a circuit;
+2. elaborate the DI in order to associate it with the values in a trace from a simulator, in other words an association
+   with the signals and modules output of a chisel-CIRCT compilation;
+3. emit a well-defined file format that a viewer can read together with a trace file to properly display the waveforms;
+4. make everything compatible and portable with the
+   new [ChiselSim](https://www.chisel-lang.org/docs/appendix/migrating-from-chiseltest).
 
-**Starting from this demo project, a better implementation and integration in the Chisel/Firrtl infrastructure will be
-developed with the aim of solving the issues
-addressed [here](https://github.com/rameloni/Tydi-Chisel-testing-frameworks-analysis).**
-
-
-> Do not use Verilog / System Verilog reserved keywords in your Chisel circuit (i.e. `wire`, `reg`).
-> In that case, `firtool` will change the `var_name` (which should be `wire`) field of the emitted HGLDD to get a legal
-> name as explained in the comments
-> [here](https://github.com/llvm/circt/blob/37fbe5e5f5c7a07064d02cea8bf4e8454178fc0e/lib/Target/DebugInfo/EmitHGLDD.cpp#L163C1-L175C2).
-> Thus, it is not possible to match Chisel/FIRRTL with the `var_name` in HGLDD.
+> In order to realize it, two alternative solutions of different nature have been proposed:
+> - one providing a unique library external to chisel
+> - the other one integrated in the chisel compilation pipeline itself
 >
-> HGLDD is a file format emitted for other existing tools based on verilog simulations and verilog keywords.
-> **I am using it temporarily and in the future firtool will be able to emit a new file format more consistent with
-> tywaves.**
+> The former would need to parse all the intermediate representations (IRs) used, like "Chisel IR" and "FIRRTL IR", and
+> the debug info already emitted by
+> the firtool compiler (the HGLDD file), then join the signals of the IRs together by identifying IDs based on some "
+> fixed" value and finally emitting a file (like a symbol table) for the viewer. However, considering that the IRs used
+> are part of a private package in the chisel library and subject to potential changes, there is no opportunity to
+> guarantee a unique ID for each signal and the maintainability over years would be even more difficult.
+> Because of that, an implementation following this approach would be too complex and less reliable. For more
+> information please refer to the [drawbacks](./README.old.md#drawbacks) section in the "old approach".
+>
+> Thus, an **integrated solution reveals as the best choice**. It would solve the problem of the unique ID and, at
+> the same time, it can improve the maintainability.
+> The idea is to generate the information directly when the transformation from one IR to another is done, namely,
+> between the "Chisel IR" and "FIRRTL IR" in the chisel library, pass this information to the firtool and emit the file
+> for the viewer directly from there, either next to or within the existing HGLDD.
+
+```
+If you are interested in using the tool and have any feedback on its implementation, 
+please open an issue or contact me.
+```
+
+The internal structure of the Tywaves project, how it works and details about the work done can be found [here]().
+
+> **Note**: The Tywaves project is currently under development. For now, the new functionality in `chisel`, `firtool`
+> and `surfer` is available in my forks of the repositories. Pull-requests will be made to the official repositories
+> soon. This will allow the Tywaves project to have a better integration and availability directly in the official
+> releases.
 
 # Table of contents
 
-- [Installation](#installation)
-    - [Install surfer-tywaves-demo](#install-surfer-tywaves-demo)
-    - [Publish locally this scala project](#publish-locally-this-scala-project)
-- [Use it on your project](#use-it-on-your-project)
-- [Example output](#example-output)
+- [Getting started](#getting-started)
+    * [Prerequisites](#prerequisites)
+    * [Installation](#installation)
+- [Usage](#usage-in-a-project-through-the-tywaves-chisel-api)
+    * [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
+    * [Run a quick simple example](#run-a-quick-simple-example)
 - [Features](#features)
-- [How it works internally](#how-it-works-internally)
-    - [Drawbacks](#drawbacks)
+- [Versioning and tool used](#versioning-and-tools-used)
 
-# Installation
+# Getting started
 
-You can run `make all` to install all the pre-requisites and **this library**.
+## Prerequisites
 
-## Prerequisite: Install [surfer-tywaves-demo](https://gitlab.com/rameloni/surfer-tywaves-demo/-/tree/tywaves)
+The full project depends on the following tools. To install them, please check the links below:
 
-The makefile contains a rule to clone the frontend repository, build and install it.
+- [Make](https://www.gnu.org/software/make/)
+- [Scala and sbt](https://docs.scala-lang.org/getting-started/sbt-track/getting-started-with-scala-and-sbt-on-the-command-line.html)
+  and [scala-cli](https://scala-cli.virtuslab.org/install)
+- [Rust](https://www.rust-lang.org/tools/install)
+- `openssl` for installing the waveform
+  gui ([instructions](https://gitlab.com/rameloni/surfer-tywaves-demo#compiling-from-source))
+- [Verilator](https://www.veripool.org/projects/verilator/wiki/Installing)
+
+## Installation
+
+The [Makefile](./Makefile) contains all the necessary commands to install the tools and the Tywaves-Chisel-API library.
+
+You can run `make all` to install everything in one go, or you can install the components separately.
+
+### Install surfer-tywaves
 
 ```bash
 make install-surfer-tywaves
-make clean # To remove the cloned repository
+make clean # Delete the cloned repository
 ```
 
-The frontend will be installed as `surfer-tywaves` executable.
-
-## Install and publish locally this library
+or install the development version
 
 ```bash
-make install-chisel-fork # TEMPORARY NEEDED: Install the chisel fork with the needed changes in the development branch
-make install-tywaves-backend
+make install -surfer - tywaves - dev
+make clean
 ```
 
-Once published locally, the `tywaves-demo-backend` can be used by adding the following line to the `build.sbt` file:
+### Download and install the forks of Chisel and Firtool
+
+```bash
+make install-chisel-fork
+make install-firtool-fork-bin # Download the Linux precompiled version (too long to compile)
+```
+
+If you want to compile the `firtool` from source, you can check
+the [instructions](https://github.com/rameloni/circt?tab=readme-ov-file#setting-this-up), once cloned the
+correct [version](#versioning-and-tools-used).
+
+### Install and publish locally this library: Tywaves-Chisel-API
+
+```bash
+make install-tywaves-chisel-api
+```
+
+Once published locally, you can use it in your project by adding the following line to your `build.sbt` file:
 
 ```scala
-libraryDependencies += "com.github.rameloni" %% "tywaves-demo-backend" % "0.1.0-SNAPSHOT"
+libraryDependencies += "com.github.rameloni" %% "tywaves-demo-backend" % "your-version-here"
 ```
 
-# Use it on your project
+# Usage in a project through the Tywaves-Chisel-API
 
-The `TywavesBackend` provides 2 simulators with functionalities to simulate a circuit
-through [svsim](https://github.com/chipsalliance/chisel/tree/main/svsim), emit VCD
-traces and generate the symbol table for the surfer-tywaves waveform viewer itself automatically:
+The `Tywaves-Chisel-API` is a library that allows to easily enable the Tywaves in a Chisel project. It provides 2
+high-level simulators with functionalities to simulate a circuit
+through [svsim](https://github.com/chipsalliance/chisel/tree/main/svsim), emit VCD traces and generate a symbol table
+for the surfer-tywaves waveform viewer itself automatically:
 
-- [ParametricSimulator](./src/main/scala/tywaves/simulator/ParametricSimulator.scala): provides some generic features
-  such as VCD trace emission, name the trace file, pass additional arguments to firtool before simulation, save the
-  workspace of svsim
+- [ParametricSimulator](./src/main/scala/tywaves/simulator/ParametricSimulator.scala): provides some generic
+  features such as VCD trace emission, name the trace file, pass additional arguments to firtool before simulation, save
+  the workspace of svsim.[^1]
 - [TywavesSimulator](./src/main/scala/tywaves/simulator/TywavesSimulator.scala): it extends the parametric simulator in
-  order to generate the symbol table for Tywaves waveform viewer and provides an option to launch the waveform viewer
-  after the simulation
+  order to generate extra debug information and optionally launch the waveform viewer directly after the simulation.
 
-> While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
-> yet, the `ParametricSimulator` is able to simulate any Chisel circuit. In case you need to simulate a circuit that is
-> not supported by `TywavesSimulator`, you can use `ParametricSimulator` to emit a VCD trace (however, you will not have
-> a "chisel" representation of the signals in the waveform viewer).
->
-> If you want to try the functionalities of `Tywaves` then `TywavesSimulator` is the right choice.
-> But, if you want to visualize waveforms of any chisel circuit without issues related to features not supported yet,
-> you should make use of `ParametricSimulator`.
-
-The following example shows how it is possible also to:
-
-- Enable the trace of the simulation
-- Set the name of the simulation (it will be used to create a folder with a user defined name for the traces and
-  workspace of svsim)
-- Launch the waveform viewer after the simulation
-- Use tywaves and expect API to test the circuit
-
-### Use TywavesSimulator
+Their usage is very similar to [ChiselTest](https://github.com/ucb-bar/chiseltest)
+and [EphemeralSimulator](https://www.chisel-lang.org/docs/appendix/migrating-from-chiseltest#migration) since they both
+implement the `PeekPokeAPI`, but they use the new official ChiselSim, and they offer additional features compared to
+EphemeralSimulator. A simulation can be run as follows:
 
 ```scala
-import tywaves.simulator.TywavesSimulator._
+// Import the simulator
+
 import tywaves.simulator.simulatorSettings._
-import org.scalatest.flatspec.AnyFlatSpec
-
-class GCDTest extends AnyFunSpec with Matchers {
-  describe("TywavesSimulator") {
-    it("runs GCD correctly") {
-      simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_GCD_correctly_launch_tywaves") {
-        gcd =>
-          gcd.io.a.poke(24.U)
-          gcd.io.b.poke(36.U)
-          gcd.io.loadValues.poke(1.B)
-          gcd.clock.step()
-          gcd.io.loadValues.poke(0.B)
-          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
-          gcd.io.resultIsValid.expect(true.B)
-          gcd.io.result.expect(12)
-      }
-    }
-  }
-}
-```
-
-### Use ParametricSimulator
-
-```scala
 import tywaves.simulator.ParametricSimulator._
-import tywaves.simulator.simulatorSettings._
-import org.scalatest.flatspec.AnyFlatSpec
+//import tywaves.simulator.TywavesSimulator._
 
-class GCDTest extends AnyFunSpec with Matchers {
-  describe("ParametricSimulator") {
-    it("runs GCD correctly") {
-      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("GCD_parametricSimulator_workdir")), simName = "runs_GCD_correctly") {
-        gcd =>
-          gcd.io.a.poke(24.U)
-          gcd.io.b.poke(36.U)
-          gcd.io.loadValues.poke(1.B)
-          gcd.clock.step()
-          gcd.io.loadValues.poke(0.B)
-          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
-          gcd.io.resultIsValid.expect(true.B)
-          gcd.io.result.expect(12)
-      }
-    }
-  }
+simulate(
+  new DUT(), // The module to simulate
+  settings = Seq(/* List of simulator settings */),
+  simName = "Name_of_the_simulation", // used to name the directory in test_run_dir
+) {
+  dut => // Body of the simulation using the PeekPokeAPI
 }
 ```
 
-# Example output
+## List of available settings of the simulators
 
-The following images show the classic and tywaves waveform visualization of the [GCD](./src/test/scala/gcd/GCD.scala)
+A simulation can be customized by passing some settings to the simulator. The following options can be specified
+for `ParametricSimulator` and / or `TywavesSimulator` classes using the following syntax:
+
+| Setting                                   | Description                                                                                                                                                                                         | Simulator                                    |
+|:------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| `VcdTrace`                                | Enable the VCD output optimizing out signals starting with an underscore (_) in the final verilog                                                                                                   | `ParametricSimulator` and `TywavesSimulator` |             
+| `VcdTraceWithUnderscore`                  | Enable the VCD output (including "underscored" signals)                                                                                                                                             | `ParametricSimulator` and `TywavesSimulator` |
+| `SaveWorkdir`                             | Save the workdir of `svsim`                                                                                                                                                                         | `ParametricSimulator` and `TywavesSimulator` |
+| `SaveWorkdirFile(name: String)`           | Save the workdir with a specific name                                                                                                                                                               | `ParametricSimulator` and `TywavesSimulator` |
+| `NameTrace(name: String)`                 | Give a name to the VCD trace                                                                                                                                                                        | `ParametricSimulator` and `TywavesSimulator` |
+| `WithFirtoolArgs(args: Seq[String])`      | Pass arguments to `firtool` under the simulation                                                                                                                                                    | `ParametricSimulator` and `TywavesSimulator` |
+| `WithTywavesWaveforms(runWaves: Boolean)` | Enable the generation of extra debug information (to fully exploit the tywaves project) and (optionally `runWaves=true`) launch the waveform viewer directly once the simulation has been completed | `ParametricSimulator` and `TywavesSimulator` |
+
+> **Note**: open an issue/PR to request new settings.
+
+## Run a quick simple example
+
+To run a quick example you can try to run the examples in the [examples](./example) folder.
+
+```bash
+cd example
+# Run the gcd example
+scala-cli test gcd.test.scala
+
+# Run a Tydi-Chisel example
+scala-cli test tydi-chisel.test.scala
+```
+
+The following images show the classic and tywaves waveform visualization of the [GCD](./example/gcd.test.scala)
 module.
-It is possible to see that the left picture does not provide any information about Chisel level types and hierarchy.
 
 ```scala
+/** A simple module useful for testing Chisel generation and testing */
 class GCD extends Module {
   val io = IO(new Bundle {
     val a             = Input(UInt(32.W))
@@ -172,111 +198,54 @@ class GCD extends Module {
   val y = Reg(UInt(32.W))
 
   when(x > y)(x := x -% y).otherwise(y := y -% x)
+
   when(io.loadValues) {
     x := io.a
     y := io.b
   }
+
   io.result := x
   io.resultIsValid := y === 0.U
 }
 ```
 
-| Only VCD loaded                                    | Tywaves (VCD + symbol table)                                |
-|----------------------------------------------------|-------------------------------------------------------------|
-| ![VCD GCD waveform](./images/vcd-gcd-waveform.png) | ![Tywaves GCD waveform](./images/tywaves-gcd-waveforms.png) |
+| Only VCD loaded                                     | Tywaves                                                     |
+|-----------------------------------------------------|-------------------------------------------------------------|
+| ![VCD GCD waveform](./images/vcd-gcd-waveforms.png) | ![Tywaves GCD waveform](./images/tywaves-gcd-waveforms.png) |
 
 # Features
 
 - [x] Parse and map Chisel/FIRRTL/Verilog circuits
 - [x] Emit VCD traces from the simulator (both with and without underscores in the signal names)
-- [x] Automatically generate the symbol table for the waveform viewer
-    - [x] Dump Chisel types in the final symbol table
-    - [x] Represent hierarchical structures of bundles
-    - [ ] Represent vectors
-    - [ ] Represent enums
-    - [ ] Represent hierarchical modules
+- [x] Automatically generate a debug information for the waveform viewer
+    - [x] Dump Chisel types
+    - [x] Dump constructor parameters in the final symbol table
+    - [x] Distinguish IO, Reg and wires
+- [x] Signal representation:
+    - [ ] Hierarchical structures of bundles
+    - [x] Vectors
+    - [ ] Enums
+    - [x] Hierarchical modules
         - [x] Generic submodules (all different types of modules)
         - [x] Variants of the same module (i.e. parametric module)
-        - [ ] Instances of the same module
+        - [x] Instances of the same module
     - [ ] For loops code generation
-    - [ ] Reg with init
 
-# How it works internally
+# Versioning and tools used
 
-The following diagram shows the main components of the demo project and how they interact with each other.
-![Tywaves backend diagram](./images/tywaves-backend-diagram.png)
+| Name of this scala package                                 | Tywaves-Chisel-API (this repo)                                                                 | Chisel                                                                                                                                                                            | Firtool                                                                                                                | Tywaves-rs                                                                    | Surfer                                                                                                                                           |
+|------------------------------------------------------------|:-----------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.0-SNAPSHOT) | [v6.1.0](https://github.com/chipsalliance/chisel/releases/tag/v6.1.0) official repo                                                                                               | [v1.62.0](https://github.com/llvm/circt/releases/tag/firtool-1.62.0) official repo                                     | -                                                                             | [v0.1.0-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
+| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.1.1-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
+| `com.github.rameloni::tywaves-demo-backend:0.2.0-SNAPSHOT` | [0.2.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.0-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.2.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.2.1-SNAPSHOT` | [0.2.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | [v0.1.0](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.0-SNAPSHOT) | [v0.2.1-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.1-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.3.0-SNAPSHOT` | 0.3.0-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel)                                        | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) from `rameloni/circt` (fork of circt) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.3.1-SNAPSHOT` | 0.3.1-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel)                                        | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) from `rameloni/circt` (fork of circt) | [v0.1.2](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.2-SNAPSHOT) | [v0.3.1-tywaves-dev-SNAPSHOT]() from `surfer-tywaves-demo` _COMING SOON_                                                                         |
 
-This backend retrieves, parses and finally maps together the Intermediate Representations (IR) of the Chisel, Firrtl and
-debug info emitted by the firtool (HGLDD) to output a symbol table that can be used by the frontend to display the
-waveform.
-It aims to map each high level signal (Chisel) to the low level signal (in System Verilog and in the VCD/FST trace) and
-vice versa. In this way it would be possible to access a variable/signal value from any waveform viewer able to support
-a **multi-level typed** view. For this demo I managed to do so by:
-
-- parsing Chisel IR, Firrtl IR, and the HGLDD (debug info emitted by firtool to link verilog and firrtl)
-- retrieving and joining signals together by identifying IDs (shared between IRs) based on signal names and source
-  locators
-- emitting the symbol table suited for the waveform viewer
-
-However, this approach has some issues associated with the IRs parsing and mapping. The [drawbacks](#drawbacks) section
-explains them and suggests a solution to them that I will implement.
-
-Considering only Firrtl, using the HGLDD file would be enough, but it does provide only information about
-FIRRTL-to-SystemVerilog mapping, so it does not contain user types information.
-
-In this small example if I use only HGLDD I would be able to see that they are both bundles, but it is not possible to
-see that they are actually `MyFloat` and `IntCoordinates` respectively. Also `Bool`, `UInt`, `SInt` would not be
-retrieved from HGLDD/FIRRTL only. From here the reason to use Chisel IR to get the user types information.
-
-```scala
-class MyFloat extends Bundle {
-  val sign        = Bool()
-  val exponent    = UInt(8.W)
-  val significand = UInt(23.W)
-}
-
-class IntCoordinates extends Bundle {
-  val x = SInt(32.W)
-  val y = SInt(32.W)
-}
-```
-
-## Drawbacks
-
-The current approach accesses and uses the Chisel IR which is private to the package `chisel3` since it is part of the
-chisel **internals,** and it is not meant to be used by external tools. It is not stable, it may change and this may
-compromise compatibility with future chisel versions. Using Chisel IR in this way will make relatively hard to maintain
-this project for future Chisel versions.
-
-Mapping different IRs together requires to find common characteristics between them. Different IRs have different
-information, reserved keywords and syntax. This can lead to different ways to represent variables and changes to their
-names. For example, a variable `x` child of a bundle `b` may be represented with `b_x` in Verilog, but it is not
-guaranteed when there are some conflicting variables.
-Therefore, this methodology requires to find an ID for each signal which is unique within the same IR, but it
-is shared between IRs. Finding an ID with these characteristics is not trivial at all since it really depends on the
-characteristics emitted during the different elaboration/compilation phases. These information, even if available,
-should remain consistent between different versions of the tools but this may not be guaranteed.
-Currently, the IDs (`ElId`) used by the tool to join the different IRs are based on source locators (where a variable is
-declared in a **source** module, not instance) contained in the IRs and names of the variables. However, this may cause
-issues when signals and modules are generated using for loops. This explains why multiple instances of the same module
-are not supported yet (the source locators of internal signals of multiple instances of the same module are the same).
-Furthermore, finding the original chisel name from HGLDD requires manipulation based on the transform function used.
-
-```scala
-case class ElId(source: String, row: Int, col: Int, name: String)
-```
-
-Finally, this tool relies on HGLDD which is a file realized for Synopsys tools and its format is not stable since it
-mainly depends on what Synopsys will need in the future.
-
-These issues reveal the need for a more stable and consistent way to map different IRs together. Parsing the IRs
-externally and joining them basing on a "guessed and unstable" ID is not an optimal solution (guessed and unstable since
-it depends on internal characteristics of compilers).
-Therefore, I planned to "integrate" a functionality to directly transfer Chisel information to FIRRTL. In this way,
-the `firtool` would be able to access all the needed information for `surfer-tywaves-demo` to render the signals.
-This would also allow to simplify the process that `tywaves-demo-backend` currently does to generate the symbol table,
-improving performances. And it may extend the support to other languages/dialects in
-the [CIRCT](https://circt.llvm.org/) ecosystem.
-
-Despite the drawbacks, this demo successfully shows the potential of the Tywaves project and the feasibility of a Typed
-Waveform Viewer for Chisel circuits.
+[^1]: While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
+yet, the `ParametricSimulator` is able to simulate any Chisel circuit. In case you need to simulate a circuit that is
+not supported by `TywavesSimulator`, you can use `ParametricSimulator` to emit a VCD trace (however, you will not have
+a "chisel" representation of the signals in the waveform viewer).
+If you want to try the functionalities of `Tywaves` then `TywavesSimulator` is the right choice.
+But, if you want to visualize waveforms of any chisel circuit without issues related to features not supported yet,
+you should make use of `ParametricSimulator`.
