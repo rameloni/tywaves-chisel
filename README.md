@@ -17,31 +17,16 @@ To achieve this goal, the project should:
 4. make everything compatible and portable with the
    new [ChiselSim](https://www.chisel-lang.org/docs/appendix/migrating-from-chiseltest).
 
-> In order to realize it, two alternative solutions of different nature have been proposed:
-> - one providing a unique library external to chisel
-> - the other one integrated in the chisel compilation pipeline itself
->
-> The former would need to parse all the intermediate representations (IRs) used, like "Chisel IR" and "FIRRTL IR", and
-> the debug info already emitted by
-> the firtool compiler (the HGLDD file), then join the signals of the IRs together by identifying IDs based on some "
-> fixed" value and finally emitting a file (like a symbol table) for the viewer. However, considering that the IRs used
-> are part of a private package in the chisel library and subject to potential changes, there is no opportunity to
-> guarantee a unique ID for each signal and the maintainability over years would be even more difficult.
-> Because of that, an implementation following this approach would be too complex and less reliable. For more
-> information please refer to the [drawbacks](./README.old.md#drawbacks) section in the "old approach".
->
-> Thus, an **integrated solution reveals as the best choice**. It would solve the problem of the unique ID and, at
-> the same time, it can improve the maintainability.
-> The idea is to generate the information directly when the transformation from one IR to another is done, namely,
-> between the "Chisel IR" and "FIRRTL IR" in the chisel library, pass this information to the firtool and emit the file
-> for the viewer directly from there, either next to or within the existing HGLDD.
+![Tywaves project](./images/tywaves-intro-screen.png)
 
 ```
 If you are interested in using the tool and have any feedback on its implementation, 
 please open an issue or contact me.
 ```
+## Internal functionality
 
-The internal structure of the Tywaves project, how it works and details about the work done can be found [here]().
+**The internal structure of the Tywaves project, how it works and details about the work done can be
+found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pages.**
 
 > **Note**: The Tywaves project is currently under development. For now, the new functionality in `chisel`, `firtool`
 > and `surfer` is available in my forks of the repositories. Pull-requests will be made to the official repositories
@@ -57,7 +42,7 @@ The internal structure of the Tywaves project, how it works and details about th
     * [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
     * [Run a quick simple example](#run-a-quick-simple-example)
 - [Features](#features)
-- [Versioning and tool used](#versioning-and-tools-used)
+- [Versioning and tools](#versioning-and-tools)
 
 # Getting started
 
@@ -102,7 +87,7 @@ make install-firtool-fork-bin # Download the Linux precompiled version (too long
 
 If you want to compile the `firtool` from source, you can check
 the [instructions](https://github.com/rameloni/circt?tab=readme-ov-file#setting-this-up), once cloned the
-correct [version](#versioning-and-tools-used).
+correct [version](#versioning-and-tools).
 
 ### Install and publish locally this library: Tywaves-Chisel-API
 
@@ -215,23 +200,30 @@ class GCD extends Module {
 
 # Features
 
+The following list shows a summary of the features added by the Tywaves project to Chisel/CIRCT and Surfer:
+
 - [x] Parse and map Chisel/FIRRTL/Verilog circuits
 - [x] Emit VCD traces from the simulator (both with and without underscores in the signal names)
-- [x] Automatically generate a debug information for the waveform viewer
+- [x] Automatic debug information generation (from Chisel through CIRCT to the waveform viewer)
     - [x] Dump Chisel types
     - [x] Dump constructor parameters in the final symbol table
     - [x] Distinguish IO, Reg and wires
-- [x] Signal representation:
-    - [ ] Hierarchical structures of bundles
+- [x] Chisel data types representation (basic):
+    - [x] Hierarchical structures of bundles
     - [x] Vectors
     - [ ] Enums
-    - [x] Hierarchical modules
+    - [x] Hierarchical modules (modules with children)
         - [x] Generic submodules (all different types of modules)
         - [x] Variants of the same module (i.e. parametric module)
         - [x] Instances of the same module
+- [ ] Chisel data types representation (advanced):
+    - [ ] Type visualization for module instances (scopes in the waveform viewer)
+    - [ ] Constructor parameters for both signals and modules
+    - [ ] Selectable signal value rendering (with type information attached)
+    - [ ] Automatic/custom signal value rendering
     - [ ] For loops code generation
 
-# Versioning and tools used
+# Versioning and tools
 
 | Name of this scala package                                 | Tywaves-Chisel-API (this repo)                                                                 | Chisel                                                                                                                                                                            | Firtool                                                                                                                | Tywaves-rs                                                                    | Surfer                                                                                                                                           |
 |------------------------------------------------------------|:-----------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
