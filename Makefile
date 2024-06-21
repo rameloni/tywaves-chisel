@@ -47,7 +47,7 @@ install-chisel-fork: create-tmp
 	@cd tmp/ && git clone $(CHISEL_FORK_REPO) && cd chisel && git checkout $(CHISEL_FORK_TAG)
 	@cd tmp/chisel && sbt "unipublish / publishLocal"
 
-install-tywaves-backend:
+install-tywaves-chisel-api: install-chisel-fork
 	@sbt publishLocal
 
 clean-firtool-fork-bin:

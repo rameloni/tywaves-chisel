@@ -41,7 +41,7 @@ class GCD extends Module {
 class GCDTest extends AnyFunSpec with Matchers {
   describe("ParametricSimulator") {
     it("runs GCD correctly") {
-      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("aaa"))) { gcd =>
+      simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("gcdWorkdir"))) { gcd =>
         gcd.io.a.poke(24.U)
         gcd.io.b.poke(36.U)
         gcd.io.loadValues.poke(1.B)
