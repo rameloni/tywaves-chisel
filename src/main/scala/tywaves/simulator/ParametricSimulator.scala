@@ -3,7 +3,6 @@ package tywaves.simulator
 import chisel3.RawModule
 import chisel3.simulator.SingleBackendSimulator
 import chisel3.simulator.PeekPokeAPI
-import com.typesafe.scalalogging.Logger
 import svsim._
 
 import java.nio.file.Files
@@ -164,7 +163,7 @@ class ParametricSimulator {
   private def setControllerSettings(controller: Simulation.Controller, settings: Seq[SimulatorSettings]): Unit =
     settings.foreach {
       case _: TraceSetting => controller.setTraceEnabled(true)
-      case s => Logger(getClass.getName).info(s"Unknown Controller Setting $s, skipping...")
+      case _ => // Do nothing
     }
 
   /** Default ParametricSimulator */
