@@ -23,6 +23,7 @@ To achieve this goal, the project should:
 If you are interested in using the tool and have any feedback on its implementation, 
 please open an issue or contact me.
 ```
+
 ## Internal functionality
 
 **The internal structure of the Tywaves project, how it works and details about the work done can be
@@ -56,7 +57,7 @@ The full project depends on the following tools. To install them, please check t
 - [Rust](https://www.rust-lang.org/tools/install)
 - `openssl` for installing the waveform
   gui ([instructions](https://gitlab.com/rameloni/surfer-tywaves-demo#compiling-from-source))
-- [Verilator](https://www.veripool.org/projects/verilator/wiki/Installing)
+- [Verilator](https://www.veripool.org/projects/verilator/wiki/Installing) (recommended `v4.228+`)
 
 ## Installation
 
@@ -66,15 +67,17 @@ You can run `make all` to install everything in one go, or you can install the c
 
 ### Install surfer-tywaves
 
+To install the latest [release](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases) of the fork:
+
 ```bash
 make install-surfer-tywaves
 make clean # Delete the cloned repository
 ```
 
-or install the development version
+or install the development version:
 
 ```bash
-make install -surfer - tywaves - dev
+make install-surfer-tywaves-dev
 make clean
 ```
 
@@ -227,12 +230,12 @@ The following list shows a summary of the features added by the Tywaves project 
 
 | Name of this scala package                                 | Tywaves-Chisel-API (this repo)                                                                 | Chisel                                                                                                                                                                            | Firtool                                                                                                                | Tywaves-rs                                                                    | Surfer                                                                                                                                           |
 |------------------------------------------------------------|:-----------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.0-SNAPSHOT) | [v6.1.0](https://github.com/chipsalliance/chisel/releases/tag/v6.1.0) official repo                                                                                               | [v1.62.0](https://github.com/llvm/circt/releases/tag/firtool-1.62.0) official repo                                     | -                                                                             | [v0.1.0-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
-| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.1.1-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
-| `com.github.rameloni::tywaves-demo-backend:0.2.0-SNAPSHOT` | [0.2.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.0-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.2.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
-| `com.github.rameloni::tywaves-demo-backend:0.2.1-SNAPSHOT` | [0.2.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | [v0.1.0](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.0-SNAPSHOT) | [v0.2.1-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.1-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
-| `com.github.rameloni::tywaves-demo-backend:0.3.0-SNAPSHOT` | 0.3.0-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel)                                        | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) from `rameloni/circt` (fork of circt) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
 | `com.github.rameloni::tywaves-demo-backend:0.3.1-SNAPSHOT` | 0.3.1-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel)                                        | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) from `rameloni/circt` (fork of circt) | [v0.1.2](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.2-SNAPSHOT) | [v0.3.1-tywaves-dev-SNAPSHOT]() from `surfer-tywaves-demo` _COMING SOON_                                                                         |
+| `com.github.rameloni::tywaves-demo-backend:0.3.0-SNAPSHOT` | 0.3.0-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel)                                        | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) from `rameloni/circt` (fork of circt) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.2.1-SNAPSHOT` | [0.2.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | [v0.1.0](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.0-SNAPSHOT) | [v0.2.1-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.1-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.2.0-SNAPSHOT` | [0.2.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.0-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.2.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.0-tywaves-dev-SNAPSHOT) from `surfer-tywaves-demo` |
+| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) from `rameloni/chisel` (fork of chisel), _needed for the parametric workspace_ | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) official repo                                     | -                                                                             | [v0.1.1-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
+| `com.github.rameloni::tywaves-demo-backend:0.1.0-SNAPSHOT` | [0.1.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.0-SNAPSHOT) | [v6.1.0](https://github.com/chipsalliance/chisel/releases/tag/v6.1.0) official repo                                                                                               | [v1.62.0](https://github.com/llvm/circt/releases/tag/firtool-1.62.0) official repo                                     | -                                                                             | [v0.1.0-SNAPSHOT]() from `surfer-tywaves-demo`                                                                                                   |
 
 [^1]: While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
 yet, the `ParametricSimulator` is able to simulate any Chisel circuit. In case you need to simulate a circuit that is
