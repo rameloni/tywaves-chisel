@@ -226,7 +226,7 @@ The following list shows a summary of the features added by the Tywaves project 
     - [ ] Automatic/custom signal value rendering
     - [ ] For loops code generation
 
-# Versioning and tools
+# Versioning and tools ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/Tywaves-internals#tywaves-software-architecture))
 
 Use the new name of the library in your sbt dependencies: `com.github.rameloni::tywaves-chisel-api:<version>`.
 
@@ -235,7 +235,7 @@ Use the new name of the library in your sbt dependencies: `com.github.rameloni::
 | 0.3.1-SNAPSHOT (_coming soon_) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.2](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.2-SNAPSHOT) | [v0.3.1-tywaves-dev-SNAPSHOT]()  _COMING SOON_                                                                        |
 | 0.3.0-SNAPSHOT (_coming soon_) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) |
 
-## Old backend implementations
+## Old backend implementations ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/An-alternative-solution-(old-demo-version)))
 
 Use the old name of the library in your sbt dependencies: `com.github.rameloni::tywaves-demo-backend:<version>`.
 

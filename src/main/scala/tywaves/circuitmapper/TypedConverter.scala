@@ -43,15 +43,16 @@ private[tywaves] object TypedConverter {
     this.workingDir = Some(workingDir)
     hglddWithOptDir = workingDir + "/" + hglddWithOptDir
     hglddDebugDir = workingDir + "/" + hglddDebugDir
+    //    hglddDebugDir = workingDir + "/" + "support-artifacts"
 
     // Annotations for ChiselStage
     val annotations = Seq(ChiselGeneratorAnnotation(generateModule)) ++ defaultFirtoolOptAnno
 
-    // Run without debug mode
-    chiselStage.execute(
-      chiselStageBaseArgs ++ Array("--target-dir", hglddWithOptDir),
-      annotations,
-    ) // execute returns the passThrough annotations in CIRCT transform stage
+    // Run without debug mode: TODO check it is actually not needed
+    //    chiselStage.execute(
+    //      chiselStageBaseArgs ++ Array("--target-dir", hglddWithOptDir),
+    //      annotations,
+    //    ) // execute returns the passThrough annotations in CIRCT transform stage
 
     // Run with debug mode
     val finalAnno = chiselStage.execute(
