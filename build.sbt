@@ -29,12 +29,12 @@ lazy val root = (project in file("."))
     buildInfoPackage          := "tywaves",
     buildInfoUsePackageAsPath := true,
   ).settings(
-    name := "TyWaves-demo-backend",
+    name := "tywaves-chisel-api",
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
-    libraryDependencies += "org.chipsalliance" %% "chisel"               % chiselVersion,
-    libraryDependencies += "org.scalatest"     %% "scalatest"            % scalatestVersion % "test",
+    libraryDependencies += "org.chipsalliance" %% "chisel"    % chiselVersion,
+    libraryDependencies += "org.scalatest"     %% "scalatest" % scalatestVersion % "test",
     //    libraryDependencies += "io.circe"          %% "circe-core"           % circeVersion,
     //    libraryDependencies += "io.circe"          %% "circe-generic"        % circeVersion,
     //    libraryDependencies += "io.circe"          %% "circe-generic-extras" % "0.14.3",
