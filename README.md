@@ -95,6 +95,7 @@ correct [version](#versioning-and-tools).
 ### Install and publish locally this library: Tywaves-Chisel-API
 
 ```bash
+git checkout <your-release>
 make install-tywaves-chisel-api
 ```
 
