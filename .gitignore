@@ -20,3 +20,6 @@ build/
 *.anno.json
 
 tmp/
+
+*.vcd
+*.fst
