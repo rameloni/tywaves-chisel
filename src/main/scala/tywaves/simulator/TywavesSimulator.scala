@@ -31,6 +31,7 @@ object TywavesSimulator extends PeekPokeAPI {
       if (containTywaves)
         settings ++ Seq(FirtoolArgs(Seq("-O=debug", "-g", "--emit-hgldd", "--split-verilog", "-o=WORK.v")))
       else settings
+
     simulator.simulate(module, finalSettings, simName)(body)
 
     if (simulator.finalTracePath.nonEmpty && containTywaves) {
@@ -38,6 +39,8 @@ object TywavesSimulator extends PeekPokeAPI {
       val extraScopes = Seq("TOP", Workspace.testbenchModuleName, "dut")
 
       // Create the debug info from the firtool and get the top module name
+      // TODO: this may not be needed anymore, since the debug info can be generated directly from chiselsim, by giving the right options to firtool
+      // But the problem is to call chiselstage with debug options
       TypedConverter.createDebugInfoHgldd(() => module, simulator.wantedWorkspacePath)
 
       // Run tywaves viewer if the Tywaves waveform generation is enabled by Tywaves(true)
