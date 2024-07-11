@@ -1,5 +1,5 @@
 //> using scala "2.13.14"
-//> using dep "com.github.rameloni::tywaves-chisel-api:0.3.0-SNAPSHOT"
+//> using dep "com.github.rameloni::tywaves-chisel-api:0.4.0-SNAPSHOT"
 //> using dep "org.chipsalliance::chisel:6.4.0"
 //> using plugin "org.chipsalliance:::chisel-plugin:6.4.0"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
@@ -10,8 +10,7 @@ import tywaves.simulator._
 import tywaves.simulator.ParametricSimulator._
 import tywaves.simulator.simulatorSettings._
 import chisel3._
-
-
+import circt.stage.ChiselStage
 // _root_ disambiguates from package chisel3.util.circt if user imports chisel3.util._
 //import _root_.circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
@@ -30,7 +29,16 @@ class GCD extends Module {
   val x = Reg(UInt(32.W))
   val y = Reg(UInt(32.W))
 
-  when(x > y)(x := x -% y).otherwise(y := y -% x)
+  val tmp = x + y
+  when(x > y) {
+    val myTmpVal: UInt = x -% y
+    x := myTmpVal
+  }.otherwise {
+    val myTmpVal = y -% x
+    val myTmpVal3 = Wire(UInt(32.W))
+    myTmpVal3 := myTmpVal
+    y         := y -% x
+  }
 
   when(io.loadValues) { x := io.a; y := io.b }
 
@@ -41,6 +49,17 @@ class GCD extends Module {
 class GCDTest extends AnyFunSpec with Matchers {
   describe("ParametricSimulator") {
     it("runs GCD correctly") {
+
+      val chiselStage = new ChiselStage(true)
+      chiselStage.execute(
+        args = Array("--target", "chirrtl"),
+        annotations = Seq(
+          chisel3.stage.ChiselGeneratorAnnotation(() => new GCD()),
+          circt.stage.FirtoolOption("-g"),
+          circt.stage.FirtoolOption("--emit-hgldd"),
+        ),
+      )
+      println("Hello, world!")
       simulate(new GCD(), Seq(VcdTrace, SaveWorkdirFile("gcdWorkdir"))) { gcd =>
         gcd.io.a.poke(24.U)
         gcd.io.b.poke(36.U)
@@ -68,6 +87,16 @@ class GCDTest extends AnyFunSpec with Matchers {
           gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
           gcd.io.resultIsValid.expect(true.B)
           gcd.io.result.expect(12)
+          gcd.io.a.poke(24.U)
+          gcd.io.b.poke(72.U)
+          gcd.reset.poke(true.B)
+          gcd.io.loadValues.poke(1.B)
+          gcd.clock.step()
+          gcd.io.loadValues.poke(0.B)
+          gcd.reset.poke(false.B)
+          gcd.clock.stepUntil(sentinelPort = gcd.io.resultIsValid, sentinelValue = 1, maxCycles = 10)
+          gcd.io.resultIsValid.expect(true.B)
+          gcd.io.result.expect(24)
       }
     }
   }

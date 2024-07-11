@@ -53,7 +53,8 @@ The full project depends on the following tools. To install them, please check t
 
 - [Make](https://www.gnu.org/software/make/)
 - [Scala and sbt](https://docs.scala-lang.org/getting-started/sbt-track/getting-started-with-scala-and-sbt-on-the-command-line.html)
-  and [scala-cli](https://scala-cli.virtuslab.org/install)
+  and [scala-cli](https://scala-cli.virtuslab.org/install) (_Note: Java versions prior to Java 11, tywaves may not work
+  correctly_)
 - [Rust](https://www.rust-lang.org/tools/install)
 - `openssl` for installing the waveform
   gui ([instructions](https://gitlab.com/rameloni/surfer-tywaves-demo#compiling-from-source))
@@ -234,7 +235,7 @@ Use the new name of the library in your sbt dependencies: `com.github.rameloni::
 
 | Release                                                                                        | Chisel fork version (from `rameloni/chisel`)                                                       | Firtool fork version (from `rameloni/circt`)                                     | Tywaves-rs version                                                            | Surfer-tywaves version                                                                                                |
 |:-----------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------|
-| [0.4.0-SNAPSHOT]() _coming soon_                                                               | [v6.4.3-tywaves-SNAPSHOT]() _coming soon_                                                          | [v0.1.3](https://github.com/rameloni/circt/releases/tag/v0.1.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
+| [0.4.0-SNAPSHOT]()                                                                             | [v6.4.3-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.3-tywaves-SNAPSHOT) | [v0.1.3](https://github.com/rameloni/circt/releases/tag/v0.1.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.3.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.3.0-SNAPSHOT) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) |
 
 ## Old backend implementations ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/An-alternative-solution-(old-demo-version)))

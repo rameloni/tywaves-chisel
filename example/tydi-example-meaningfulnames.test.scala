@@ -22,9 +22,9 @@ import chisel3.util.Counter
 object MyTypes {
 
   /** Bit(64) type, defined in pipelineSimple_types */
-  def generated_0_7_Tc5SbYQz_27 = UInt(64.W)
+  def UInt_64_t = UInt(64.W)
 
-  assert(this.generated_0_7_Tc5SbYQz_27.getWidth == 64)
+  assert(this.UInt_64_t.getWidth == 64)
 
   /** Bit(64) type, defined in pipelineSimple_types */
   def generated_0_7_d3p7qsW3_29 = SInt(64.W)
@@ -37,7 +37,7 @@ object MyTypes {
  * struct) that contains a value associated with a timestamp.
  */
 class NumberGroup extends Group {
-  val time  = MyTypes.generated_0_7_Tc5SbYQz_27
+  val time  = MyTypes.UInt_64_t
   val value = MyTypes.generated_0_7_d3p7qsW3_29
 }
 
@@ -46,18 +46,18 @@ class NumberGroup extends Group {
  * struct) that represents the stats of the implemented algorithm.
  */
 class Stats extends Group {
-  val average = MyTypes.generated_0_7_Tc5SbYQz_27
-  val max     = MyTypes.generated_0_7_Tc5SbYQz_27
-  val min     = MyTypes.generated_0_7_Tc5SbYQz_27
-  val sum     = MyTypes.generated_0_7_Tc5SbYQz_27
+  val average = (new UInt_64_t)
+  val max     = MyTypes.UInt_64_t
+  val min     = MyTypes.UInt_64_t
+  val sum     = MyTypes.UInt_64_t
 }
 
 /** Stream, defined in pipelineSimple_types. */
-class Generated_0_30_soHLkh1p_30
-    extends PhysicalStreamDetailed(e = new Stats, n = 1, d = 1, c = 1, r = false, u = Null())
+class Stats_stream(private val e: TydiEl = new Stats, n: Int = 1, d: Int = 1, c: Int = 1, r: Boolean = false, u: TydiEl = Null())
+    extends PhysicalStreamDetailed(e = new Stats, n = n, d = d, c = c, r = r, u = u)
 
-object Generated_0_30_soHLkh1p_30 {
-  def apply(): Generated_0_30_soHLkh1p_30 = Wire(new Generated_0_30_soHLkh1p_30())
+object Stats_stream {
+  def apply(): Stats_stream = Wire(new Stats_stream())
 }
 
 /** Stream, defined in pipelineSimple_types. */
@@ -68,8 +68,15 @@ object Generated_0_36_xeHH4woS_24 {
   def apply(): Generated_0_36_xeHH4woS_24 = Wire(new Generated_0_36_xeHH4woS_24())
 }
 
+/** Stream, defined in pipelineSimple_types. */
+class UInt_64_t_stream extends PhysicalStreamDetailed(e=new UInt_64_t, n=1, d=1, c=1, r=false, u=Null())
+
+object UInt_64_t_stream {
+  def apply(): UInt_64_t_stream = Wire(new UInt_64_t_stream())
+}
+
 /** Bit(64), defined in pipelineSimple_types. */
-class Generated_0_7_Tc5SbYQz_27 extends BitsEl(64.W)
+class UInt_64_t extends BitsEl(64.W)
 
 /** Bit(64), defined in pipelineSimple_types. */
 class Generated_0_7_d3p7qsW3_29 extends BitsEl(64.W)
@@ -86,10 +93,14 @@ class PipelineSimple_interface extends TydiModule {
   val in = inStream.toPhysical
 
   /** Stream of [[out]] with output direction. */
-  val outStream = Generated_0_30_soHLkh1p_30()
+  val outStream = Stats_stream()
 
   /** IO of [[outStream]] with output direction. */
   val out = outStream.toPhysical
+
+  val in2Stream = UInt_64_t_stream().flip
+  /** IO of [[in2Stream]] with input direction. */
+  val in2: PhysicalStream = in2Stream.toPhysical
 }
 
 /**
@@ -104,7 +115,7 @@ class Reducer_interface extends TydiModule {
   val in = inStream.toPhysical
 
   /** Stream of [[out]] with output direction. */
-  val outStream = Generated_0_30_soHLkh1p_30()
+  val outStream = Stats_stream()
 
   /** IO of [[outStream]] with output direction. */
   val out = outStream.toPhysical
@@ -164,6 +175,7 @@ class NonNegativeFilter extends Instance_NonNegativeFilter_interface_RefToVargen
 class PipelineSimple extends PipelineSimple_interface {
   inStream  := DontCare
   outStream := DontCare // Probably not used
+  in2Stream := DontCare
 
   // Modules
   private val filter  = Module(new NonNegativeFilter)
@@ -219,7 +231,7 @@ class Reducer extends Reducer_interface {
   outStream.el.sum     := cSum
   outStream.el.min     := cMin
   outStream.el.max     := cMax
-  outStream.el.average := Mux(nValidSamples.value > 0.U, cSum / nValidSamples.value, 0.U)
+  outStream.el.average.value := Mux(nValidSamples.value > 0.U, cSum / nValidSamples.value, 0.U)
 
   // Set the output stream control signals:
   // they are fixed since the sum, min, max and average are updated every cycle
@@ -233,7 +245,7 @@ class Reducer extends Reducer_interface {
 class PipelineSimpleTest extends AnyFunSpec with Matchers {
   describe("ParametricSimulator") {
     it("runs Pipeline Simple correctly") {
-      simulate(new PipelineSimple, Seq(VcdTrace, SaveWorkdirFile("pipelineSimpleWorkdir"))) {
+      simulate(new PipelineSimple, Seq(VcdTrace, SaveWorkdirFile("aaa"))) {
         dut => dut.clock.step()
       }
     }
