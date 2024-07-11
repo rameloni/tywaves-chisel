@@ -25,8 +25,6 @@ class ParametricSimulatorSpec extends AnyFunSpec with Matchers {
 
   describe("ParametricSimulator Runs") {
 
-    resetBeforeEachRun()
-
     it("runs GCD correctly without settings") {
       simulate(new GCD())(gcd => gcdTb(gcd))
     }
@@ -90,7 +88,7 @@ class ParametricSimulatorSpec extends AnyFunSpec with Matchers {
   }
 
   describe("ParametricSimulator Exceptions") {
-    resetBeforeEachRun()
+
     it("throws an exception when NameTrace is used without VcdTrace or VcdTraceWithUnderscore") {
       intercept[Exception] {
         simulate(new GCD(), Seq(NameTrace("")))(_ => gcdTb _)
