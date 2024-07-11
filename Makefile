@@ -3,14 +3,14 @@
 TYWAVES_SURFER_NAME=surfer-tywaves-demo
 TYWAVES_SURFER_REPO=https://gitlab.com/rameloni/${TYWAVES_SURFER_NAME}.git
 TYWAVES_SURFER_VERSION=0.3.2
-TYWAVES_SURFER_TAG=v${TYWAVES_SURFER_VERSION}-tywaves-dev-SNAPSHOT
+TYWAVES_SURFER_TAG=v${TYWAVES_SURFER_VERSION}-tywaves-SNAPSHOT
 TYWAVES_SURFER_BIN=surfer-tywaves
 TYWAVES_SURFER_TARGET_NAME=${TYWAVES_SURFER_BIN}-${TYWAVES_SURFER_VERSION}
 TYWAVES_SURFER_INSTALL_PATH=$(HOME)/.cargo/bin/
 
 # Chisel information
 CHISEL_FORK_REPO=https://github.com/rameloni/chisel.git
-CHISEL_FORK_TAG=v6.4.2-tywaves-SNAPSHOT
+CHISEL_FORK_TAG=v6.4.3-tywaves-SNAPSHOT
 
 # Circt (firtool) information
 CIRCT_FIRTOOL_ZIP_NAME=firtool-bin-linux-x64.tar.gz
@@ -48,7 +48,7 @@ install-chisel-fork: create-tmp
 	@cd tmp/chisel && sbt "unipublish / publishLocal"
 
 install-tywaves-chisel-api: install-chisel-fork
-	@sbt publishLocal
+	@sbt reload && sbt compile && sbt publishLocal
 
 clean-firtool-fork-bin:
 	$(RM) tmp/$(CIRCT_FIRTOOL_ZIP_NAME)*
