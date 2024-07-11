@@ -11,6 +11,7 @@ private[tywaves] object TywavesInterface {
       hglddDirPath:  Option[String],
       extraScopes:   Seq[String],
       topModuleName: Option[String],
+      waitFor:       Boolean = true,
   ): Unit = {
     {
       import scala.sys.process._
@@ -36,6 +37,8 @@ private[tywaves] object TywavesInterface {
 
     // Execute and return to the caller
     @unused val process = new ProcessBuilder(cmd: _*).inheritIO().start()
+    if (waitFor)
+      process.waitFor()
     // No wait for the process to finish
   }
 }

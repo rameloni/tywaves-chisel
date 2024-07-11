@@ -80,9 +80,15 @@ class MyFSMTest extends AnyFunSpec with Matchers {
           circt.stage.FirtoolOption("--emit-hgldd"),
         ),
       )
+      simulate(new MyFSM(), Seq(VcdTrace, WithTywavesWaveformsGo(true)), simName = "runs_MYFSM_correctly_launch_tywaves_and_go") {
+        fsm =>
+          fsm.clock.step(10)
+          fsm.clock.step(10)
+      }
       simulate(new MyFSM(), Seq(VcdTrace, WithTywavesWaveforms(true)), simName = "runs_MYFSM_correctly_launch_tywaves") {
         fsm =>
           fsm.clock.step(10)
+          fsm.io.inputState.poke(MyFSMStates.StateA)
           fsm.clock.step(10)
       }
     }

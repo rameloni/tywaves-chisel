@@ -23,7 +23,6 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
   }
 
   describe("New TywavesFunctionalities") {
-    resetBeforeEachRun()
 
     it("runs GCD with waveform generation") {
       simulate(new GCD(), Seq(VcdTrace, WithTywavesWaveforms(false)), simName = "runs_gcd_with_waveform_generation") {
@@ -65,8 +64,6 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
   }
 
   describe("Tywaves with ParametricSimulator Functionalities") {
-
-    resetBeforeEachRun()
 
     it("runs GCD correctly without settings") {
       simulate(new GCD())(gcd => gcdTb(gcd))
@@ -131,7 +128,6 @@ class TywavesSimulatorSpec extends AnyFunSpec with Matchers {
   }
 
   describe("TywavesSimulator Exceptions") {
-    resetBeforeEachRun()
     it("throws an exception when NameTrace is used without VcdTrace or VcdTraceWithUnderscore") {
       intercept[Exception] {
         simulate(new GCD(), Seq(NameTrace("")))(_ => gcdTb _)

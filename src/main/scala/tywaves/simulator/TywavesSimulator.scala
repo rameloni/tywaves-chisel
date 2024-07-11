@@ -7,13 +7,15 @@ import tywaves.circuitmapper.TypedConverter
 
 object TywavesSimulator extends PeekPokeAPI {
 
-  private[simulator] case class Tywaves(runWaves: Boolean) extends SimulatorSettings
-  val WithTywavesWaveforms: Boolean => Tywaves = (runWaves: Boolean) => Tywaves(runWaves)
+  private[simulator] case class Tywaves(runWaves: Boolean, waitFor: Boolean) extends SimulatorSettings
 
-  private var simulator = new TywavesSimulator
+  /** Generate tywaves info and optionally run the waveform */
+  val WithTywavesWaveforms: Boolean => Tywaves = (runWaves: Boolean) => Tywaves(runWaves, waitFor = true)
 
-  /** If true, the simulator will be reset before running each simulation */
-  private var _resetSimulationBeforeRun = false
+  /**
+   * Generate tywaves info and optionally run the waveform without blocking sbt
+   */
+  val WithTywavesWaveformsGo: Boolean => Tywaves = (runWaves: Boolean) => Tywaves(runWaves, waitFor = false)
 
   /** Use this method to run a simulation */
   def simulate[T <: RawModule](
@@ -44,28 +46,22 @@ object TywavesSimulator extends PeekPokeAPI {
       TypedConverter.createDebugInfoHgldd(() => module, simulator.wantedWorkspacePath)
 
       // Run tywaves viewer if the Tywaves waveform generation is enabled by Tywaves(true)
-      if (finalSettings.contains(Tywaves(true)))
+      val (runWaves, waitFor) =
+        if (finalSettings.contains(Tywaves(runWaves = true, waitFor = true))) { (true, true) }
+        else if (finalSettings.contains(Tywaves(runWaves = true, waitFor = false))) { (true, false) }
+        else { (false, false) }
+      if (runWaves)
         TywavesInterface.run(
           vcdPath = simulator.finalTracePath.get,
           hglddDirPath = Some(TypedConverter.getDebugInfoDir(gOpt = true)),
           extraScopes = extraScopes,
           topModuleName = TypedConverter.getTopModuleName,
+          waitFor = waitFor,
         )
     } else if (containTywaves)
       throw new Exception("Tywaves waveform generation requires a trace file. Please enable VcdTrace.")
 
   }
 
-  /**
-   * Use this method to manually reset the simulator and run multiple
-   * independent simulations
-   */
-  @deprecated
-  def reset(): Unit =
-    simulator = new TywavesSimulator
-
-  @deprecated
-  def resetBeforeEachRun(): Unit =
-    _resetSimulationBeforeRun = true
 }
 class TywavesSimulator extends ParametricSimulator

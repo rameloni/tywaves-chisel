@@ -145,15 +145,16 @@ simulate(
 A simulation can be customized by passing some settings to the simulator. The following options can be specified
 for `ParametricSimulator` and / or `TywavesSimulator` classes using the following syntax:
 
-| Setting                                   | Description                                                                                                                                                                                         | Simulator                                    |
-|:------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| `VcdTrace`                                | Enable the VCD output optimizing out signals starting with an underscore (_) in the final verilog                                                                                                   | `ParametricSimulator` and `TywavesSimulator` |             
-| `VcdTraceWithUnderscore`                  | Enable the VCD output (including "underscored" signals)                                                                                                                                             | `ParametricSimulator` and `TywavesSimulator` |
-| `SaveWorkdir`                             | Save the workdir of `svsim`                                                                                                                                                                         | `ParametricSimulator` and `TywavesSimulator` |
-| `SaveWorkdirFile(name: String)`           | Save the workdir with a specific name                                                                                                                                                               | `ParametricSimulator` and `TywavesSimulator` |
-| `NameTrace(name: String)`                 | Give a name to the VCD trace                                                                                                                                                                        | `ParametricSimulator` and `TywavesSimulator` |
-| `WithFirtoolArgs(args: Seq[String])`      | Pass arguments to `firtool` under the simulation                                                                                                                                                    | `ParametricSimulator` and `TywavesSimulator` |
-| `WithTywavesWaveforms(runWaves: Boolean)` | Enable the generation of extra debug information (to fully exploit the tywaves project) and (optionally `runWaves=true`) launch the waveform viewer directly once the simulation has been completed | `ParametricSimulator` and `TywavesSimulator` |
+| Setting                                     | Description                                                                                                                                                                                         | Simulator                                    |
+|:--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| `VcdTrace`                                  | Enable the VCD output optimizing out signals starting with an underscore (_) in the final verilog                                                                                                   | `ParametricSimulator` and `TywavesSimulator` |             
+| `VcdTraceWithUnderscore`                    | Enable the VCD output (including "underscored" signals)                                                                                                                                             | `ParametricSimulator` and `TywavesSimulator` |
+| `SaveWorkdir`                               | Save the workdir of `svsim`                                                                                                                                                                         | `ParametricSimulator` and `TywavesSimulator` |
+| `SaveWorkdirFile(name: String)`             | Save the workdir with a specific name                                                                                                                                                               | `ParametricSimulator` and `TywavesSimulator` |
+| `NameTrace(name: String)`                   | Give a name to the VCD trace                                                                                                                                                                        | `ParametricSimulator` and `TywavesSimulator` |
+| `WithFirtoolArgs(args: Seq[String])`        | Pass arguments to `firtool` under the simulation                                                                                                                                                    | `ParametricSimulator` and `TywavesSimulator` |
+| `WithTywavesWaveforms(runWaves: Boolean)`   | Enable the generation of extra debug information (to fully exploit the tywaves project) and (optionally `runWaves=true`) launch the waveform viewer directly once the simulation has been completed | `ParametricSimulator` and `TywavesSimulator` |
+| `WithTywavesWaveformsGo(runWaves: Boolean)` | Same as `WithTywavesWaveforms` but without blocking sbt if `runWaves` is `true`                                                                                                                     | `ParametricSimulator` and `TywavesSimulator` |
 
 > **Note**: open an issue/PR to request new settings.
 
@@ -227,7 +228,7 @@ The following list shows a summary of the features added by the Tywaves project 
     - [x] Selectable signal value rendering (with type information attached)
     - [ ] Automatic/custom signal value rendering
     - [ ] For loops code generation
-    - [ ] Temporary values (also inside `when` and `otherwise` blocks)
+    - [x] Temporary values (also inside `when` and `otherwise` blocks)
 
 # Versioning and tools ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/Tywaves-internals#tywaves-software-architecture))
 
