@@ -227,7 +227,7 @@ The following list shows a summary of the features added by the Tywaves project 
     - [x] Selectable signal value rendering (with type information attached)
     - [ ] Automatic/custom signal value rendering
     - [ ] For loops code generation
-    - [ ] Temporary values (also inside `when` and `otherwise` blocks)
+    - [x] Temporary values (also inside `when` and `otherwise` blocks)
 
 # Versioning and tools ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/Tywaves-internals#tywaves-software-architecture))
 

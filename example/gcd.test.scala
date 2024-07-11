@@ -6,10 +6,10 @@
 //> using dep "org.scalatest::scalatest:3.2.18"
 
 // DO NOT EDIT THE ORTHER OF THESE IMPORTS (it will be solved in future versions)
+import chisel3._
 import tywaves.simulator._
 import tywaves.simulator.ParametricSimulator._
 import tywaves.simulator.simulatorSettings._
-import chisel3._
 import circt.stage.ChiselStage
 // _root_ disambiguates from package chisel3.util.circt if user imports chisel3.util._
 //import _root_.circt.stage.ChiselStage
