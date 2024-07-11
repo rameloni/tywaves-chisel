@@ -215,7 +215,7 @@ The following list shows a summary of the features added by the Tywaves project 
 - [x] Chisel data types representation (basic):
     - [x] Hierarchical structures of bundles
     - [x] Vectors
-    - [ ] Enums
+    - [x] Enums
     - [x] Hierarchical modules (modules with children)
         - [x] Generic submodules (all different types of modules)
         - [x] Variants of the same module (i.e. parametric module)
@@ -223,9 +223,10 @@ The following list shows a summary of the features added by the Tywaves project 
 - [ ] Chisel data types representation (advanced):
     - [ ] Type visualization for module instances (scopes in the waveform viewer)
     - [ ] Constructor parameters for both signals and modules
-    - [ ] Selectable signal value rendering (with type information attached)
+    - [x] Selectable signal value rendering (with type information attached)
     - [ ] Automatic/custom signal value rendering
     - [ ] For loops code generation
+    - [ ] Temporary values (also inside `when` and `otherwise` blocks)
 
 # Versioning and tools ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/Tywaves-internals#tywaves-software-architecture))
 
@@ -233,7 +234,7 @@ Use the new name of the library in your sbt dependencies: `com.github.rameloni::
 
 | Release                                                                                        | Chisel fork version (from `rameloni/chisel`)                                                       | Firtool fork version (from `rameloni/circt`)                                     | Tywaves-rs version                                                            | Surfer-tywaves version                                                                                                |
 |:-----------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------|
-| 0.3.1-SNAPSHOT (_coming soon_)                                                                 | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.2](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.2-SNAPSHOT) | [v0.3.1-tywaves-dev-SNAPSHOT]()  _COMING SOON_                                                                        |
+| [0.4.0-SNAPSHOT]() _coming soon_                                                               | [v6.4.3-tywaves-SNAPSHOT]() _coming soon_                                                          | [v0.1.3](https://github.com/rameloni/circt/releases/tag/v0.1.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.3.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.3.0-SNAPSHOT) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) |
 
 ## Old backend implementations ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/An-alternative-solution-(old-demo-version)))
