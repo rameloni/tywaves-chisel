@@ -1,0 +1,8 @@
+run:
+	@echo "Running all examples once at a time"
+	@for example in $(shell ls .); do \
+		if [ $$(ls $$example | grep -c ".scala$$") -ne 0 ]; then \
+			echo $$example; \
+			scala-cli test $$example > /dev/null 2>&1; \
+		fi; \
+	done
