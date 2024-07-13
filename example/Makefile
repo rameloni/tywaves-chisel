@@ -9,3 +9,4 @@ run: clean
 
 clean: 
 	$(RM) -rf test_run_dir/
+	$(RM) *.vcd *.fir

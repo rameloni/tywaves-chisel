@@ -14,6 +14,8 @@ private[tywaves] object TypedConverter {
   private val chiselStageBaseArgs =
     Array("--target", "systemverilog", "--split-verilog", "--firtool-binary-path", firtoolBinaryPath)
 
+  val firtoolBaseArgs: Seq[String] =
+    Seq("-O=debug", "-g", "--emit-hgldd", "--split-verilog") // Run in debug mode compiled with optimizations
   // Directories where the debug information is stored
   private var hglddDebugDir   = "hgldd/debug"
   private var hglddWithOptDir = "hgldd/opt" // TODO: remove
@@ -21,13 +23,10 @@ private[tywaves] object TypedConverter {
   private val topModuleName = TopModuleName(None)
 
   // Default firtool options encoded as annotations for ChiselStage
-  private val defaultFirtoolOptAnno =
-    createFirtoolOptions(Seq(
-      "--emit-hgldd"
-      //      "-disable-annotation-unknown",
-      //      "--hgldd-output-prefix=<path>",
-      /*,"--output-final-mlir=WORK.mlir"*/
-    ))
+  private val defaultFirtoolOptAnno = createFirtoolOptions(firtoolBaseArgs)
+  //      "-disable-annotation-unknown",
+  //      "--hgldd-output-prefix=<path>",
+  /*,"--output-final-mlir=WORK.mlir"*/
 
   // Map any sequence of string into FirtoolOptions
   private def createFirtoolOptions(args: Seq[String]) = args.map(circt.stage.FirtoolOption)
@@ -37,8 +36,9 @@ private[tywaves] object TypedConverter {
    * [[circt.stage.ChiselStage]]
    */
   def createDebugInfoHgldd[T <: RawModule](
-      generateModule: () => T,
-      workingDir:     String = "workingDir",
+      generateModule:        () => T,
+      workingDir:            String = "workingDir",
+      additionalFirtoolArgs: Seq[String],
   ): Unit = {
     this.workingDir = Some(workingDir)
     hglddWithOptDir = workingDir + "/" + hglddWithOptDir
@@ -54,10 +54,9 @@ private[tywaves] object TypedConverter {
     //      annotations,
     //    ) // execute returns the passThrough annotations in CIRCT transform stage
 
-    // Run with debug mode
     val finalAnno = chiselStage.execute(
       chiselStageBaseArgs ++ Array("--target-dir", hglddDebugDir),
-      annotations ++ createFirtoolOptions(Seq("-O=debug", "-g")),
+      createFirtoolOptions(additionalFirtoolArgs) ++ annotations ,
     ) // execute returns the passThrough annotations in CIRCT transform stage
 
     // Get the module name
