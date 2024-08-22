@@ -52,6 +52,8 @@ found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pa
   - [Future work](#future-work)
 - [Versioning and tools (ref)](#versioning-and-tools-ref)
   - [Old backend implementations (ref)](#old-backend-implementations-ref)
+- [Publications](#publications)
+- [License](#license)
 
 # Getting started
 
@@ -276,8 +278,33 @@ Use the old name of the library in your sbt dependencies: `com.github.rameloni::
 | [0.1.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) | -                                                                             | [v0.1.1-SNAPSHOT]()                                                                                                   |
 | [0.1.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.0-SNAPSHOT) | [v6.1.0](https://github.com/chipsalliance/chisel/releases/tag/v6.1.0) official repo                | [v1.62.0](https://github.com/llvm/circt/releases/tag/firtool-1.62.0) | -                                                                             | [v0.1.0-SNAPSHOT]()                                                                                                   |
 
+# Publications
 
----
+The paper on Tywaves has been submitted for publication [NorCAS 2024](https://events.tuni.fi/norcas2024/). 
+It is currently available at https://arxiv.org/abs/2408.10082.
+If you like Tywaves, you can cite this work using the following BibTex entry:
+```
+@unpublished{meloni2024tywavestypedwaveformviewer,
+      title={{Tywaves: A Typed Waveform Viewer for Chisel}}, 
+      author={Raffaele Meloni and H. Peter Hofstee and Zaid Al-Ars},
+      year={2024},
+      eprint={2408.10082},
+      archivePrefix={arXiv},
+      primaryClass={cs.AR},
+      url={https://arxiv.org/abs/2408.10082}, 
+      note={Submitted for publication}
+}
+```
+> The BibTex entry will be updated when the paper will be officially published.
+
+For more details about the original work and the justification behind design choices, please refer to the respective MSc thesis:
+
+> Raffaele Meloni. *Tywaves: A Typed Waveform Viewer for Chisel HDL with Typed Circuit Components and Tydi Streams*. MSc thesis, TU Delft, Aug. 2024. Available: https://repository.tudelft.nl/record/uuid:829f43e0-1c34-4624-8c33-5182b71bd027.
+
+# License
+
+Tywaves is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Please see [LICENSE](./LICENSE) for details.
+
 ---
 
 [^1]: While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
