@@ -60,6 +60,7 @@ class ParametricSimulator {
     else None
 
   private var _firtoolArgs: Seq[String] = Seq()
+  def getFirtoolArgs:       Seq[String] = _firtoolArgs
 
   /** Launch and execute a simulation given a list of [[SimulatorSettings]]. */
   def simulate[T <: RawModule](
