@@ -56,7 +56,7 @@ private[tywaves] object TypedConverter {
 
     val finalAnno = chiselStage.execute(
       chiselStageBaseArgs ++ Array("--target-dir", hglddDebugDir),
-      createFirtoolOptions(additionalFirtoolArgs) ++ annotations ,
+      createFirtoolOptions(additionalFirtoolArgs) ++ annotations,
     ) // execute returns the passThrough annotations in CIRCT transform stage
 
     // Get the module name

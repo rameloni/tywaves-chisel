@@ -14,7 +14,7 @@ CHISEL_FORK_TAG=v6.4.3-tywaves-SNAPSHOT
 
 # Circt (firtool) information
 CIRCT_FIRTOOL_ZIP_NAME=firtool-bin-linux-x64.tar.gz
-CIRCT_FORK_VERSION=0.1.3
+CIRCT_FORK_VERSION=0.1.4
 CIRCT_FORK_TAG=v${CIRCT_FORK_VERSION}-tywaves-SNAPSHOT
 CIRCT_FORK_FIRTOOL_ZIP_LINK=https://github.com/rameloni/circt/releases/download/${CIRCT_FORK_TAG}/${CIRCT_FIRTOOL_ZIP_NAME}
 CIRCT_FIRTOOL_NAME=firtool-type-dbg-info-${CIRCT_FORK_VERSION}

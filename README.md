@@ -36,14 +36,22 @@ found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pa
 
 # Table of contents
 
+- [Tywaves project: a type based waveform viewer for Chisel and Tydi-Chisel](#tywaves-project-a-type-based-waveform-viewer-for-chisel-and-tydi-chisel)
+  - [Internal functionality](#internal-functionality)
+- [Table of contents](#table-of-contents)
 - [Getting started](#getting-started)
-    * [Prerequisites](#prerequisites)
-    * [Installation](#installation)
-- [Usage](#usage-in-a-project-through-the-tywaves-chisel-api)
-    * [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
-    * [Run a quick simple example](#run-a-quick-simple-example)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [Install surfer-tywaves](#install-surfer-tywaves)
+    - [Download and install the forks of Chisel and Firtool](#download-and-install-the-forks-of-chisel-and-firtool)
+    - [Install and publish locally this library: Tywaves-Chisel-API](#install-and-publish-locally-this-library-tywaves-chisel-api)
+- [Usage in a project through the Tywaves-Chisel-API](#usage-in-a-project-through-the-tywaves-chisel-api)
+  - [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
+  - [Run a quick simple example](#run-a-quick-simple-example)
 - [Features](#features)
-- [Versioning and tools](#versioning-and-tools)
+- [Versioning and tools (ref)](#versioning-and-tools-ref)
+  - [Old backend implementations (ref)](#old-backend-implementations-ref)
+- [](#)
 
 # Getting started
 
@@ -156,7 +164,7 @@ for `ParametricSimulator` and / or `TywavesSimulator` classes using the followin
 | `WithTywavesWaveforms(runWaves: Boolean)`   | Enable the generation of extra debug information (to fully exploit the tywaves project) and (optionally `runWaves=true`) launch the waveform viewer directly once the simulation has been completed | `ParametricSimulator` and `TywavesSimulator` |
 | `WithTywavesWaveformsGo(runWaves: Boolean)` | Same as `WithTywavesWaveforms` but without blocking sbt if `runWaves` is `true`                                                                                                                     | `TywavesSimulator`                        |
 
-> **Note**: open an issue/PR to request new settings.
+> **Note**: please open an issue/PR to request new settings.
 
 ## Run a quick simple example
 
@@ -234,8 +242,11 @@ The following list shows a summary of the features added by the Tywaves project 
 
 Use the new name of the library in your sbt dependencies: `com.github.rameloni::tywaves-chisel-api:<version>`.
 
+> **IMPORTANT NOTE**: Always use the latest version of Tywaves
+
 | Release                                                                                        | Chisel fork version (from `rameloni/chisel`)                                                       | Firtool fork version (from `rameloni/circt`)                                     | Tywaves-rs version                                                            | Surfer-tywaves version                                                                                                |
 |:-----------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------|
+| [0.4.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.4.1-SNAPSHOT) | [v6.4.3-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/circt/releases/tag/v0.1.4-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.4.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.4.0-SNAPSHOT) | [v6.4.3-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.3-tywaves-SNAPSHOT) | [v0.1.3](https://github.com/rameloni/circt/releases/tag/v0.1.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.3.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.3.0-SNAPSHOT) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) |
 
