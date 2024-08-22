@@ -48,6 +48,7 @@ found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pa
 - [Usage in a project through the Tywaves-Chisel-API](#usage-in-a-project-through-the-tywaves-chisel-api)
   - [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
   - [Run a quick simple example](#run-a-quick-simple-example)
+  - [Real use case scenario: debugging ChiselWatt](#real-use-case-scenario-debugging-chiselwatt)
 - [Features](#features)
   - [Future work](#future-work)
 - [Versioning and tools (ref)](#versioning-and-tools-ref)
@@ -213,6 +214,10 @@ class GCD extends Module {
 | Only VCD loaded                                     | Tywaves                                                     |
 | --------------------------------------------------- | ----------------------------------------------------------- |
 | ![VCD GCD waveform](./images/vcd-gcd-waveforms.png) | ![Tywaves GCD waveform](./images/tywaves-gcd-waveforms.png) |
+
+## Real use case scenario: debugging [ChiselWatt](https://github.com/antonblanchard/chiselwatt)
+If you are interested to see Tywaves working in an existing Chisel design, you can refer to this [section](./CHISELWATT.USECASE.md).
+This example has been used in the official [publication](#publications) to assess Tywaves.
 
 # Features
 
