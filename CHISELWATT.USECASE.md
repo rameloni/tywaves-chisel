@@ -1,4 +1,4 @@
-# Tywave real use case: debugging ChiselWatt
+# Tywaves real use case: debugging ChiselWatt
 
 [ChiselWatt](https://github.com/antonblanchard/chiselwatt) is a general-purpose soft-core processor in Chisel that implements a small version of the [OpenPOWER ISA](https://openpowerfoundation.org/specifications/isa/) (Instruction Set Architecture).
 
