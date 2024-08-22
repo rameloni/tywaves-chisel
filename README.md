@@ -49,9 +49,9 @@ found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pa
   - [List of available settings of the simulators](#list-of-available-settings-of-the-simulators)
   - [Run a quick simple example](#run-a-quick-simple-example)
 - [Features](#features)
+  - [Future work](#future-work)
 - [Versioning and tools (ref)](#versioning-and-tools-ref)
   - [Old backend implementations (ref)](#old-backend-implementations-ref)
-- [](#)
 
 # Getting started
 
@@ -154,15 +154,15 @@ A simulation can be customized by passing some settings to the simulator. The fo
 for `ParametricSimulator` and / or `TywavesSimulator` classes using the following syntax:
 
 | Setting                                     | Description                                                                                                                                                                                         | Simulator                                    |
-|:--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| `VcdTrace`                                  | Enable the VCD output optimizing out signals starting with an underscore (_) in the final verilog                                                                                                   | `ParametricSimulator` and `TywavesSimulator` |             
+| :------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `VcdTrace`                                  | Enable the VCD output optimizing out signals starting with an underscore (_) in the final verilog                                                                                                   | `ParametricSimulator` and `TywavesSimulator` |
 | `VcdTraceWithUnderscore`                    | Enable the VCD output (including "underscored" signals)                                                                                                                                             | `ParametricSimulator` and `TywavesSimulator` |
 | `SaveWorkdir`                               | Save the workdir of `svsim`                                                                                                                                                                         | `ParametricSimulator` and `TywavesSimulator` |
 | `SaveWorkdirFile(name: String)`             | Save the workdir with a specific name                                                                                                                                                               | `ParametricSimulator` and `TywavesSimulator` |
 | `NameTrace(name: String)`                   | Give a name to the VCD trace                                                                                                                                                                        | `ParametricSimulator` and `TywavesSimulator` |
 | `WithFirtoolArgs(args: Seq[String])`        | Pass arguments to `firtool` under the simulation                                                                                                                                                    | `TywavesSimulator`                           |
 | `WithTywavesWaveforms(runWaves: Boolean)`   | Enable the generation of extra debug information (to fully exploit the tywaves project) and (optionally `runWaves=true`) launch the waveform viewer directly once the simulation has been completed | `ParametricSimulator` and `TywavesSimulator` |
-| `WithTywavesWaveformsGo(runWaves: Boolean)` | Same as `WithTywavesWaveforms` but without blocking sbt if `runWaves` is `true`                                                                                                                     | `TywavesSimulator`                        |
+| `WithTywavesWaveformsGo(runWaves: Boolean)` | Same as `WithTywavesWaveforms` but without blocking sbt if `runWaves` is `true`                                                                                                                     | `TywavesSimulator`                           |
 
 > **Note**: please open an issue/PR to request new settings.
 
@@ -209,7 +209,7 @@ class GCD extends Module {
 ```
 
 | Only VCD loaded                                     | Tywaves                                                     |
-|-----------------------------------------------------|-------------------------------------------------------------|
+| --------------------------------------------------- | ----------------------------------------------------------- |
 | ![VCD GCD waveform](./images/vcd-gcd-waveforms.png) | ![Tywaves GCD waveform](./images/tywaves-gcd-waveforms.png) |
 
 # Features
@@ -238,6 +238,21 @@ The following list shows a summary of the features added by the Tywaves project 
     - [ ] For loops code generation
     - [x] Temporary values (also inside `when` and `otherwise` blocks)
 
+## Future work
+- Internals
+  - Use [intrinsics](https://circt.llvm.org/docs/Dialects/FIRRTL/FIRRTLIntrinsics/) as a communication method to propagate type information between Chisel and CIRCT instead of [FIRRTL annotations](https://circt.llvm.org/docs/Dialects/FIRRTL/FIRRTLAnnotations/). Annotations are used temporarily and need to be replaced with a mechanism more suitable for MLIR operations. This change should enable the acceptance of PRs in the official repositories.
+  - Create a new debug file format independent of HGLDD that is free from the code patterns and limitations of VCS internals. HGLDD is built using some internal VCS names and methods that overcomplicate the format in general cases.
+- Performance
+  - Profiling and performance overhead
+  - Remove the VCD rewriter step to improve the performance of `tywaves-rs` and Surfer.
+  - Parallelize the [`TyVcdBuilder`](https://github.com/rameloni/tywaves-rs/blob/6880f6b20b661e88baae7555cb2e8b33763a8148/src/tyvcd/builder.rs#L30-L38) to further improve the performance of the viewer.
+- Feature Extensions
+  - Extend and test the infrastructure of Tywaves to support other languages integrated into CIRCT.
+  - Enable type information for module instances in the viewer UI.
+  - Automatically choose how to render a value based on the type name: either based on the name of the type or by defining an API that allows users to define how to render a value, similar to a `toString()` method.
+  - Enable switching between multiple IRs in the viewer dynamically (i.e., Chisel, FIRRTL, Verilog).
+  - Introduce a new specific visualization for hardware streaming interfaces (i.e., providing a new abstract view like showing deserializing a whole message received). This would work for Tydi but also for other streaming protocols if a standard interface for visualization is provided.
+
 # Versioning and tools ([ref](https://github.com/rameloni/tywaves-chisel-demo/wiki/Tywaves-internals#tywaves-software-architecture))
 
 Use the new name of the library in your sbt dependencies: `com.github.rameloni::tywaves-chisel-api:<version>`.
@@ -245,7 +260,7 @@ Use the new name of the library in your sbt dependencies: `com.github.rameloni::
 > **IMPORTANT NOTE**: Always use the latest version of Tywaves
 
 | Release                                                                                        | Chisel fork version (from `rameloni/chisel`)                                                       | Firtool fork version (from `rameloni/circt`)                                     | Tywaves-rs version                                                            | Surfer-tywaves version                                                                                                |
-|:-----------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------|:------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------|
+| :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
 | [0.4.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.4.1-SNAPSHOT) | [v6.4.3-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/circt/releases/tag/v0.1.4-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.4.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.4.0-SNAPSHOT) | [v6.4.3-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.3-tywaves-SNAPSHOT) | [v0.1.3](https://github.com/rameloni/circt/releases/tag/v0.1.3-tywaves-SNAPSHOT) | [v0.1.4](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.4-SNAPSHOT) | [v0.3.2-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.2-tywaves-SNAPSHOT)     |
 | [0.3.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.3.0-SNAPSHOT) | [v6.4.2-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.4.2-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/circt/releases/tag/v0.1.1-tywaves-SNAPSHOT) | [v0.1.1](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.1-SNAPSHOT) | [v0.3.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.3.0-tywaves-dev-SNAPSHOT) |
@@ -255,13 +270,15 @@ Use the new name of the library in your sbt dependencies: `com.github.rameloni::
 Use the old name of the library in your sbt dependencies: `com.github.rameloni::tywaves-demo-backend:<version>`.
 
 | Release                                                                                        | Chisel fork version (from `rameloni/chisel`)                                                       | Firtool version (official CIRCT repo)                                | Tywaves-rs version                                                            | Surfer-tywaves version                                                                                                |
-|:-----------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------|:------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------|
+| :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------- | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
 | [0.2.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) | [v0.1.0](https://github.com/rameloni/tywaves-rs/releases/tag/v0.1.0-SNAPSHOT) | [v0.2.1-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.1-tywaves-dev-SNAPSHOT) |
 | [0.2.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.2.0-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) | -                                                                             | [v0.2.0-tywaves-dev-SNAPSHOT](https://gitlab.com/rameloni/surfer-tywaves-demo/-/releases/v0.2.0-tywaves-dev-SNAPSHOT) |
 | [0.1.1-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.1-SNAPSHOT) | [v6.1.0-tywaves-SNAPSHOT](https://github.com/rameloni/chisel/releases/tag/v6.1.0-tywaves-SNAPSHOT) | [v1.75.0](https://github.com/llvm/circt/releases/tag/firtool-1.75.0) | -                                                                             | [v0.1.1-SNAPSHOT]()                                                                                                   |
 | [0.1.0-SNAPSHOT](https://github.com/rameloni/tywaves-chisel-demo/releases/tag/v0.1.0-SNAPSHOT) | [v6.1.0](https://github.com/chipsalliance/chisel/releases/tag/v6.1.0) official repo                | [v1.62.0](https://github.com/llvm/circt/releases/tag/firtool-1.62.0) | -                                                                             | [v0.1.0-SNAPSHOT]()                                                                                                   |
 
-#
+
+---
+---
 
 [^1]: While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
 yet, the `ParametricSimulator` is able to simulate any Chisel circuit. In case you need to simulate a circuit that is
