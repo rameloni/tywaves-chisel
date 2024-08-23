@@ -5,16 +5,16 @@ Tywaves consists of implementing a new type based waveform viewer for [Chisel](h
 and [Tydi-Chisel](https://github.com/abs-tudelft/Tydi-Chisel) circuits.
 
 The full project aims to successfully display waveforms of a Chisel circuit while **maintaining the source code
-structure, constructs, hierarchies and source language type information (the scala data type and constructor parameters)
+structure, constructs, hierarchies and source language type information (the Scala data type and constructor parameters)
 of signals and modules**.
 
-To achieve this goal, the project should:
+To achieve this goal, the project:
 
-1. collect high-level debug information (DI) of a circuit;
-2. elaborate the DI in order to associate it with the values in a trace from a simulator, in other words an association
+1. collects high-level debug information (DI) of a circuit;
+2. elaborates the DI in order to associate it with the values in a trace from a simulator, in other words an association
    with the signals and modules output of a chisel-CIRCT compilation;
-3. emit a well-defined file format that a viewer can read together with a trace file to properly display the waveforms;
-4. make everything compatible and portable with the
+3. emits a well-defined file format that a viewer can read together with a trace file to properly display the waveforms;
+4. makes everything compatible and portable with the
    new [ChiselSim](https://www.chisel-lang.org/docs/appendix/migrating-from-chiseltest).
 
 ![Tywaves project](./images/tywaves-intro-screen.png)
@@ -30,8 +30,8 @@ please open an issue or contact me.
 found in the [**wiki**](https://github.com/rameloni/tywaves-chisel-demo/wiki) pages.**
 
 > **Note**: The Tywaves project is currently under development. For now, the new functionality in `chisel`, `firtool`
-> and `surfer` is available in my forks of the repositories. Pull-requests will be made to the official repositories
-> soon. This will allow the Tywaves project to have a better integration and availability directly in the official
+> and `surfer` is available in my forks of the repositories. Pull-requests have been issued to the official repositories
+> This would allow the Tywaves project to have a better integration and availability directly in the official
 > releases.
 
 # Table of contents
@@ -312,10 +312,5 @@ Tywaves is licensed under the [Apache License 2.0](https://www.apache.org/licens
 
 ---
 
-[^1]: While `TywavesSimulator` is a central part of the Tywaves project and its functionalities are not fully supported
-yet, the `ParametricSimulator` is able to simulate any Chisel circuit. In case you need to simulate a circuit that is
-not supported by `TywavesSimulator`, you can use `ParametricSimulator` to emit a VCD trace (however, you will not have
-a "chisel" representation of the signals in the waveform viewer).
+[^1]: While `TywavesSimulator` is a central part of the Tywaves project, the `ParametricSimulator` is able to simulate any Chisel circuit independently from Tywaves. In case you need to simulate a circuit without a "Chisel" representation, you can use `ParametricSimulator` to emit a VCD trace.
 If you want to try the functionalities of `Tywaves` then `TywavesSimulator` is the right choice.
-But, if you want to visualize waveforms of any chisel circuit without issues related to features not supported yet,
-you should make use of `ParametricSimulator`.
