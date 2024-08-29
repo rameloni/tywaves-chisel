@@ -256,6 +256,7 @@ The following list shows a summary of the features added by the Tywaves project 
 - Feature Extensions
   - Extend and test the infrastructure of Tywaves to support other languages integrated into CIRCT.
   - Enable type information for module instances in the viewer UI.
+  - Enable to save the state of the viewer. This feature should allow to save the appearance of waveforms onto a state file.
   - Automatically choose how to render a value based on the type name: either based on the name of the type or by defining an API that allows users to define how to render a value, similar to a `toString()` method.
   - Enable switching between multiple IRs in the viewer dynamically (i.e., Chisel, FIRRTL, Verilog).
   - Introduce a new specific visualization for hardware streaming interfaces (i.e., providing a new abstract view like showing deserializing a whole message received). This would work for Tydi but also for other streaming protocols if a standard interface for visualization is provided.
