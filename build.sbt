@@ -2,7 +2,7 @@ val chiselVersion    = "6.4.3-tywaves-SNAPSHOT" // Local version of chisel
 val scalatestVersion = "3.2.16"
 val circeVersion     = "0.14.6"
 
-val firtoolVersion  = "0.1.4"
+val firtoolVersion  = "0.1.5"
 val firtoolFullName = "firtool-type-dbg-info-" ++ firtoolVersion
 
 val surferTywavesVersion  = "0.3.2"
@@ -13,7 +13,7 @@ Compile / scalaSource := baseDirectory.value / "src/main/scala"
 Test / scalaSource := baseDirectory.value / "src/test/scala"
 
 ThisBuild / organization := "com.github.rameloni"
-ThisBuild / version      := "0.4.1-SNAPSHOT"
+ThisBuild / version      := "0.4.2-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.14"
 
 enablePlugins(ScalafmtPlugin)
