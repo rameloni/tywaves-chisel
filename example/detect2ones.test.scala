@@ -1,5 +1,5 @@
 //> using scala "2.13.14"
-//> using dep "com.github.rameloni::tywaves-chisel-api:0.4.0-SNAPSHOT"
+//> using dep "com.github.rameloni::tywaves-chisel-api:0.4.2-SNAPSHOT"
 //> using dep "org.chipsalliance::chisel:6.4.0"
 //> using plugin "org.chipsalliance:::chisel-plugin:6.4.0"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
